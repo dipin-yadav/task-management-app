@@ -1,29 +1,100 @@
-# Create T3 App
+# Task Management & Collaboration Tool
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+A premium, serverless Task Management application built with the **T3 Stack**. This project enables team collaboration through intuitive task tracking, project management, and user profiles.
 
-## What's next? How do I make an app with this?
+## 🚀 Tech Stack
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+- **Framework**: [Next.js](https://nextjs.org) (Pages Router)
+- **Language**: [TypeScript](https://www.typescriptlang.org)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com)
+- **Authentication**: [NextAuth.js](https://next-auth.js.org)
+- **Database ORM**: [Prisma](https://prisma.io)
+- **API**: [tRPC](https://trpc.io)
+- **Database**: [PostgreSQL](https://www.postgresql.org) (Local / Supabase)
+- **Infrastructure**: [SST (Serverless Stack)](https://sst.dev) for AWS deployment
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+## 🛠️ Local Setup
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+Follow these steps to get the project running on your local machine.
 
-## Learn More
+### Prerequisites
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+- **Node.js** >= 18.x
+- **Docker** (optional, for local database container)
+- **npm** >= 9.x
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+### 1. Clone & Install
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+```bash
+git clone <repository-url>
+cd task-management-app
+npm install
+```
 
-## How do I deploy this?
+### 2. Environment Variables
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+Create a `.env` file in the root directory and populate it:
+
+```env
+# Database
+DATABASE_URL="postgresql://postgres:password@localhost:5432/task-management-app"
+DIRECT_URL="postgresql://postgres:password@localhost:5432/task-management-app"
+
+# Next Auth
+NEXTAUTH_SECRET="your-secret-here" # Generate with: openssl rand -base64 32
+NEXTAUTH_URL="http://localhost:3000"
+
+# Optional: Discord Auth
+# DISCORD_CLIENT_ID=""
+# DISCORD_CLIENT_SECRET=""
+```
+
+### 3. Start Database
+
+If you have Docker installed, use the provided script to spin up a PostgreSQL instance:
+
+```bash
+chmod +x start-database.sh
+./start-database.sh
+```
+
+### 4. Database Migrations
+
+Apply the Prisma schema to your local database:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+### 5. Start Development Server
+
+```bash
+npm run dev
+```
+
+The app will be available at [http://localhost:3000](http://localhost:3000).
+
+## 📂 Project Structure
+
+- `docs/`: Comprehensive project documentation (Architecture, Schema, Setup).
+- `prisma/`: Database schema and migration history.
+- `src/components/`: Reusable React components.
+- `src/pages/`: Next.js pages and API routes.
+- `src/server/`: Backend logic (tRPC routers, auth configuration, database client).
+- `sst.config.ts`: Infrastructure-as-code for AWS deployment.
+
+## ☁️ Deployment
+
+This project is designed to be deployed on **AWS** using **SST**.
+
+1. Configure AWS CLI with your credentials.
+2. Update the `DATABASE_URL` to point to your **Supabase** instance.
+3. Run `npx sst deploy --stage production`.
+
+Refer to `docs/setup-guide.md` for detailed deployment instructions.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
