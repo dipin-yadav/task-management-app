@@ -2,6 +2,7 @@ import { projectRouter } from "~/server/api/routers/project";
 import { taskRouter } from "~/server/api/routers/task";
 import { tagRouter } from "~/server/api/routers/tag";
 import { authRouter } from "~/server/api/routers/auth";
+import { dashboardRouter } from "~/server/api/routers/dashboard";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -14,6 +15,7 @@ export const appRouter = createTRPCRouter({
   task: taskRouter,
   tag: tagRouter,
   auth: authRouter,
+  dashboard: dashboardRouter,
 });
 
 // export type definition of API
