@@ -3,7 +3,7 @@ import { signIn } from "next-auth/react";
 import { getServerAuthSession } from "~/server/auth";
 import Head from "next/head";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/router";
 
 export default function SignIn() {
@@ -13,23 +13,29 @@ export default function SignIn() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
 
-    setLoading(false);
-
-    if (result?.error) {
-      setError("Invalid email or password");
-    } else {
-      void router.push("/");
+      if (result?.error) {
+        setError("Invalid email or password");
+      } else {
+        void router.push("/");
+      }
+    } catch {
+      setError(
+        "Unable to sign in right now. Please check your connection and try again.",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -37,7 +43,10 @@ export default function SignIn() {
     <>
       <Head>
         <title>Sign In — Task Manager</title>
-        <meta name="description" content="Sign in to your Task Manager account" />
+        <meta
+          name="description"
+          content="Sign in to your Task Manager account"
+        />
       </Head>
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-sm">
@@ -62,7 +71,10 @@ export default function SignIn() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-300">
+              <label
+                htmlFor="email"
+                className="mb-1.5 block text-sm font-medium text-gray-300"
+              >
                 Email
               </label>
               <input
@@ -77,7 +89,10 @@ export default function SignIn() {
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-300">
+              <label
+                htmlFor="password"
+                className="mb-1.5 block text-sm font-medium text-gray-300"
+              >
                 Password
               </label>
               <input
@@ -102,7 +117,10 @@ export default function SignIn() {
 
           <p className="mt-6 text-center text-sm text-gray-400">
             Don&apos;t have an account?{" "}
-            <Link href="/auth/signup" className="font-medium text-purple-400 hover:text-purple-300">
+            <Link
+              href="/auth/signup"
+              className="font-medium text-purple-400 hover:text-purple-300"
+            >
               Sign up
             </Link>
           </p>

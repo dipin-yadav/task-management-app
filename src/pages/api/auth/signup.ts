@@ -1,9 +1,10 @@
 import { type NextApiRequest, type NextApiResponse } from "next";
+import { Prisma } from "@prisma/client";
+import { z } from "zod";
 
 import { hashPassword } from "~/server/auth/password";
 import { signupSchema } from "~/server/auth/signup";
 import { db } from "~/server/db";
-import { z } from "zod";
 
 export default async function handler(
   req: NextApiRequest,
@@ -22,7 +23,9 @@ export default async function handler(
     });
 
     if (existingUser) {
-      return res.status(409).json({ error: "User with this email already exists" });
+      return res
+        .status(409)
+        .json({ error: "User with this email already exists" });
     }
 
     // Hash password
@@ -47,7 +50,18 @@ export default async function handler(
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return res.status(400).json({ error: error.errors[0]?.message ?? "Validation error" });
+      return res
+        .status(400)
+        .json({ error: error.errors[0]?.message ?? "Validation error" });
+    }
+
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return res
+        .status(409)
+        .json({ error: "User with this email already exists" });
     }
 
     console.error("Signup error:", error);

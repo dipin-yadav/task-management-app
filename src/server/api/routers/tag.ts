@@ -17,15 +17,24 @@ export const tagRouter = createTRPCRouter({
       z.object({
         projectId: z.string().cuid(),
         name: z.string().min(1).max(50),
-        color: z.string().regex(/^#[0-9a-fA-F]{6}$/).default("#6366f1"),
+        color: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/)
+          .default("#6366f1"),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await verifyProjectMembership(ctx.db, input.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.session.user.id,
+      );
 
       // Check for duplicate name within project
       const existing = await ctx.db.tag.findUnique({
-        where: { name_projectId: { name: input.name, projectId: input.projectId } },
+        where: {
+          name_projectId: { name: input.name, projectId: input.projectId },
+        },
       });
 
       if (existing) {
@@ -50,7 +59,11 @@ export const tagRouter = createTRPCRouter({
   list: protectedProcedure
     .input(z.object({ projectId: z.string().cuid() }))
     .query(async ({ ctx, input }) => {
-      await verifyProjectMembership(ctx.db, input.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.session.user.id,
+      );
 
       return ctx.db.tag.findMany({
         where: { projectId: input.projectId },
@@ -67,7 +80,10 @@ export const tagRouter = createTRPCRouter({
       z.object({
         id: z.string().cuid(),
         name: z.string().min(1).max(50).optional(),
-        color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+        color: z
+          .string()
+          .regex(/^#[0-9a-fA-F]{6}$/)
+          .optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -82,7 +98,9 @@ export const tagRouter = createTRPCRouter({
       // If renaming, check uniqueness within project
       if (input.name && input.name !== tag.name) {
         const existing = await ctx.db.tag.findUnique({
-          where: { name_projectId: { name: input.name, projectId: tag.projectId } },
+          where: {
+            name_projectId: { name: input.name, projectId: tag.projectId },
+          },
         });
 
         if (existing) {
@@ -130,16 +148,26 @@ export const tagRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const task = await ctx.db.task.findUnique({ where: { id: input.taskId } });
+      const task = await ctx.db.task.findUnique({
+        where: { id: input.taskId },
+      });
       if (!task) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
-      await verifyProjectMembership(ctx.db, task.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        task.projectId,
+        ctx.session.user.id,
+      );
 
       // Verify the tag belongs to the same project
       const tag = await ctx.db.tag.findUnique({ where: { id: input.tagId } });
-      if (tag?.projectId !== task.projectId) {
+      if (!tag) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Tag not found" });
+      }
+
+      if (tag.projectId !== task.projectId) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Tag does not belong to this project",
@@ -175,12 +203,18 @@ export const tagRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const task = await ctx.db.task.findUnique({ where: { id: input.taskId } });
+      const task = await ctx.db.task.findUnique({
+        where: { id: input.taskId },
+      });
       if (!task) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
-      await verifyProjectMembership(ctx.db, task.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        task.projectId,
+        ctx.session.user.id,
+      );
 
       const existing = await ctx.db.taskTag.findUnique({
         where: { taskId_tagId: { taskId: input.taskId, tagId: input.tagId } },

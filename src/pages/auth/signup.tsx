@@ -2,7 +2,7 @@ import { type GetServerSidePropsContext } from "next";
 import { getServerAuthSession } from "~/server/auth";
 import Head from "next/head";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/router";
 
 export default function SignUp() {
@@ -14,7 +14,7 @@ export default function SignUp() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -71,7 +71,10 @@ export default function SignUp() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-gray-300">
+              <label
+                htmlFor="name"
+                className="mb-1.5 block text-sm font-medium text-gray-300"
+              >
                 Full Name
               </label>
               <input
@@ -86,7 +89,10 @@ export default function SignUp() {
             </div>
 
             <div>
-              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-300">
+              <label
+                htmlFor="email"
+                className="mb-1.5 block text-sm font-medium text-gray-300"
+              >
                 Email
               </label>
               <input
@@ -101,7 +107,10 @@ export default function SignUp() {
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-gray-300">
+              <label
+                htmlFor="password"
+                className="mb-1.5 block text-sm font-medium text-gray-300"
+              >
                 Password
               </label>
               <input
@@ -110,14 +119,17 @@ export default function SignUp() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={12}
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-gray-500 outline-none transition focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                 placeholder="••••••••"
               />
             </div>
 
             <div>
-              <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-gray-300">
+              <label
+                htmlFor="confirmPassword"
+                className="mb-1.5 block text-sm font-medium text-gray-300"
+              >
                 Confirm Password
               </label>
               <input
@@ -126,7 +138,7 @@ export default function SignUp() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={12}
                 className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-gray-500 outline-none transition focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
                 placeholder="••••••••"
               />
@@ -143,7 +155,10 @@ export default function SignUp() {
 
           <p className="mt-6 text-center text-sm text-gray-400">
             Already have an account?{" "}
-            <Link href="/auth/signin" className="font-medium text-purple-400 hover:text-purple-300">
+            <Link
+              href="/auth/signin"
+              className="font-medium text-purple-400 hover:text-purple-300"
+            >
               Sign in
             </Link>
           </p>

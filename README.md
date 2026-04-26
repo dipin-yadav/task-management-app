@@ -144,7 +144,7 @@ All application APIs are type-safe tRPC procedures except sign-up, which is a RE
 | Phase 2: Authentication | Complete |
 | Phase 3: Core Features API | Complete |
 | Phase 4: UI/UX Implementation | Complete |
-| Phase 5: Unit Tests | Not started |
+| Phase 5: Unit Tests | In progress |
 | Phase 6: Deployment | Not started |
 | Phase 7: Documentation & Polish | In progress |
 

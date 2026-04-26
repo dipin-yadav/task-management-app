@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   createMockCaller,
   createMockDb,
+  TEST_OTHER_TAG_ID,
   TEST_PROJECT_ID,
+  TEST_TAG_ID,
   TEST_TASK_ID,
   TEST_USER_ID,
 } from "~/test/trpc";
@@ -48,6 +50,7 @@ describe("task router", () => {
       data: {
         title: "Write tests",
         description: undefined,
+        status: "TODO",
         priority: "HIGH",
         deadline: undefined,
         projectId: TEST_PROJECT_ID,
@@ -57,6 +60,25 @@ describe("task router", () => {
       include: expectedTaskInclude,
     });
     expect(result).toBe(task);
+  });
+
+  it("rejects task creation with tags from another project", async () => {
+    const db = createMockDb();
+    const caller = createMockCaller(db);
+    db.projectMember.findUnique.mockResolvedValue(membership);
+    db.tag.count.mockResolvedValue(1);
+
+    await expect(
+      caller.task.create({
+        projectId: TEST_PROJECT_ID,
+        title: "Write tests",
+        tagIds: [TEST_TAG_ID, TEST_OTHER_TAG_ID],
+      }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+
+    expect(db.task.create).not.toHaveBeenCalled();
   });
 
   it("lists project tasks with filters", async () => {
@@ -119,6 +141,59 @@ describe("task router", () => {
     expect(result).toBe(updatedTask);
   });
 
+  it("updates task fields and status in a single task update", async () => {
+    const db = createMockDb();
+    const caller = createMockCaller(db);
+    const updatedTask = {
+      id: TEST_TASK_ID,
+      title: "Updated task",
+      status: "DONE",
+      projectId: TEST_PROJECT_ID,
+    };
+    db.task.findUnique.mockResolvedValue({
+      id: TEST_TASK_ID,
+      projectId: TEST_PROJECT_ID,
+    });
+    db.projectMember.findUnique.mockResolvedValue(membership);
+    db.task.update.mockResolvedValue(updatedTask);
+
+    const result = await caller.task.update({
+      id: TEST_TASK_ID,
+      title: "Updated task",
+      status: "DONE",
+    });
+
+    expect(db.task.update).toHaveBeenCalledWith({
+      where: { id: TEST_TASK_ID },
+      data: { title: "Updated task", status: "DONE" },
+      include: expectedTaskInclude,
+    });
+    expect(result).toBe(updatedTask);
+  });
+
+  it("rejects task updates with tags from another project before changing tag links", async () => {
+    const db = createMockDb();
+    const caller = createMockCaller(db);
+    db.task.findUnique.mockResolvedValue({
+      id: TEST_TASK_ID,
+      projectId: TEST_PROJECT_ID,
+    });
+    db.projectMember.findUnique.mockResolvedValue(membership);
+    db.tag.count.mockResolvedValue(0);
+
+    await expect(
+      caller.task.update({
+        id: TEST_TASK_ID,
+        tagIds: [TEST_TAG_ID],
+      }),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+
+    expect(db.taskTag.deleteMany).not.toHaveBeenCalled();
+    expect(db.task.update).not.toHaveBeenCalled();
+  });
+
   it("deletes a task from a project for a member", async () => {
     const db = createMockDb();
     const caller = createMockCaller(db);
@@ -141,7 +216,9 @@ describe("task router", () => {
     const caller = createMockCaller(db);
     db.projectMember.findUnique.mockResolvedValue(null);
 
-    await expect(caller.task.list({ projectId: TEST_PROJECT_ID })).rejects.toMatchObject({
+    await expect(
+      caller.task.list({ projectId: TEST_PROJECT_ID }),
+    ).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
     expect(db.task.findMany).not.toHaveBeenCalled();

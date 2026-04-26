@@ -10,6 +10,9 @@ export const TEST_USER_ID = "clx00000000000000000000001";
 export const TEST_PROJECT_ID = "clx00000000000000000000002";
 export const TEST_TASK_ID = "clx00000000000000000000003";
 export const TEST_MEMBER_ID = "clx00000000000000000000004";
+export const TEST_TAG_ID = "clx00000000000000000000005";
+export const TEST_OTHER_TAG_ID = "clx00000000000000000000006";
+export const TEST_OTHER_USER_ID = "clx00000000000000000000007";
 
 export const createMockSession = (userId = TEST_USER_ID): Session => ({
   expires: new Date("2099-01-01T00:00:00.000Z").toISOString(),
@@ -35,6 +38,17 @@ export interface MockDb {
     findUnique: MockFn;
     update: MockFn;
   };
+  user: {
+    findUnique: MockFn;
+  };
+  tag: {
+    count: MockFn;
+    create: MockFn;
+    delete: MockFn;
+    findMany: MockFn;
+    findUnique: MockFn;
+    update: MockFn;
+  };
   task: {
     create: MockFn;
     delete: MockFn;
@@ -44,8 +58,11 @@ export interface MockDb {
     update: MockFn;
   };
   taskTag: {
+    create: MockFn;
     createMany: MockFn;
+    delete: MockFn;
     deleteMany: MockFn;
+    findUnique: MockFn;
   };
   $transaction: MockFn;
 }
@@ -65,6 +82,17 @@ export const createMockDb = (): MockDb => {
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    user: {
+      findUnique: vi.fn(),
+    },
+    tag: {
+      count: vi.fn(),
+      create: vi.fn(),
+      delete: vi.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
     task: {
       create: vi.fn(),
       delete: vi.fn(),
@@ -74,8 +102,11 @@ export const createMockDb = (): MockDb => {
       update: vi.fn(),
     },
     taskTag: {
+      create: vi.fn(),
       createMany: vi.fn(),
+      delete: vi.fn(),
       deleteMany: vi.fn(),
+      findUnique: vi.fn(),
     },
     $transaction: vi.fn(),
   };

@@ -18,17 +18,17 @@ describe("signup validation", () => {
     }
   });
 
-  it("rejects a password shorter than six characters", () => {
+  it("rejects a password shorter than twelve characters", () => {
     const result = signupSchema.safeParse({
       name: "Test User",
       email: "test@example.com",
-      password: "12345",
+      password: "password123",
     });
 
     expect(result.success).toBe(false);
     if (!result.success) {
       expect(result.error.flatten().fieldErrors.password).toContain(
-        "Password must be at least 6 characters",
+        "Password must be at least 12 characters",
       );
     }
   });
@@ -37,7 +37,7 @@ describe("signup validation", () => {
     const input = {
       name: "Test User",
       email: "test@example.com",
-      password: "password123",
+      password: "password1234",
     };
 
     const result = signupSchema.safeParse(input);

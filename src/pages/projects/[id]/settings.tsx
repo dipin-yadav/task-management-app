@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import { AppLayout } from "~/components/layout/AppLayout";
 import { Avatar } from "~/components/ui/Avatar";
@@ -16,7 +16,14 @@ import { getErrorMessage } from "~/utils/format";
 type ProjectRoleValue = "OWNER" | "ADMIN" | "MEMBER";
 type Tag = RouterOutputs["tag"]["list"][number];
 
-const tagColors = ["#64748b", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+const tagColors = [
+  "#64748b",
+  "#0ea5e9",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+];
 
 export default function ProjectSettingsPage() {
   const router = useRouter();
@@ -37,6 +44,7 @@ export default function ProjectSettingsPage() {
   const [description, setDescription] = useState("");
   const [memberEmail, setMemberEmail] = useState("");
   const [memberRole, setMemberRole] = useState<"ADMIN" | "MEMBER">("MEMBER");
+  const [memberError, setMemberError] = useState("");
   const [newTagName, setNewTagName] = useState("");
   const [newTagColor, setNewTagColor] = useState(tagColors[1] ?? "#0ea5e9");
   const [message, setMessage] = useState("");
@@ -101,7 +109,7 @@ export default function ProjectSettingsPage() {
     },
   });
 
-  const handleUpdateProject = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleUpdateProject = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage("");
 
@@ -118,9 +126,10 @@ export default function ProjectSettingsPage() {
     }
   };
 
-  const handleAddMember = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleAddMember = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage("");
+    setMemberError("");
 
     try {
       await addMember.mutateAsync({
@@ -132,11 +141,11 @@ export default function ProjectSettingsPage() {
       setMemberRole("MEMBER");
       setMessage("Member added.");
     } catch (error) {
-      setMessage(getErrorMessage(error));
+      setMemberError(getErrorMessage(error));
     }
   };
 
-  const handleCreateTag = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateTag = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage("");
 
@@ -154,11 +163,45 @@ export default function ProjectSettingsPage() {
   };
 
   const handleDeleteProject = async () => {
-    if (!window.confirm("Delete this project and all of its tasks, tags, and members?")) return;
+    if (
+      !window.confirm(
+        "Delete this project and all of its tasks, tags, and members?",
+      )
+    )
+      return;
 
     try {
       await deleteProject.mutateAsync({ id: projectId });
       void router.push("/projects");
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    }
+  };
+
+  const handleSaveTag = async (
+    tagId: string,
+    input: { name: string; color: string },
+  ) => {
+    setMessage("");
+
+    try {
+      await updateTag.mutateAsync({
+        id: tagId,
+        name: input.name,
+        color: input.color,
+      });
+      setMessage("Tag updated.");
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    }
+  };
+
+  const handleDeleteTag = async (tagId: string) => {
+    setMessage("");
+
+    try {
+      await deleteTag.mutateAsync({ id: tagId });
+      setMessage("Tag deleted.");
     } catch (error) {
       setMessage(getErrorMessage(error));
     }
@@ -198,7 +241,9 @@ export default function ProjectSettingsPage() {
         ) : null}
 
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="text-base font-semibold text-slate-950">Project details</h3>
+          <h3 className="text-base font-semibold text-slate-950">
+            Project details
+          </h3>
           <form onSubmit={handleUpdateProject} className="mt-5 space-y-4">
             <Input
               label="Name"
@@ -227,31 +272,48 @@ export default function ProjectSettingsPage() {
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-semibold text-slate-950">Members</h3>
-              <p className="text-sm text-slate-500">Add users by email and manage project roles.</p>
+              <h3 className="text-base font-semibold text-slate-950">
+                Members
+              </h3>
+              <p className="text-sm text-slate-500">
+                Add users by email and manage project roles.
+              </p>
             </div>
             <Badge>{project?.members.length ?? 0} members</Badge>
           </div>
 
           {canManageProject ? (
-            <form onSubmit={handleAddMember} className="mb-5 grid gap-3 md:grid-cols-[1fr_180px_auto]">
+            <form
+              onSubmit={handleAddMember}
+              className="mb-5 grid gap-3 md:grid-cols-[1fr_180px_auto]"
+            >
               <Input
                 label="Email"
                 type="email"
                 value={memberEmail}
                 placeholder="teammate@example.com"
-                onChange={(event) => setMemberEmail(event.currentTarget.value)}
+                error={memberError}
+                onChange={(event) => {
+                  setMemberEmail(event.currentTarget.value);
+                  if (memberError) setMemberError("");
+                }}
               />
               <Select
                 label="Role"
                 value={memberRole}
-                onChange={(event) => setMemberRole(event.currentTarget.value as "ADMIN" | "MEMBER")}
+                onChange={(event) =>
+                  setMemberRole(event.currentTarget.value as "ADMIN" | "MEMBER")
+                }
               >
                 <option value="MEMBER">Member</option>
                 <option value="ADMIN">Admin</option>
               </Select>
               <div className="flex items-end">
-                <Button type="submit" className="w-full" isLoading={addMember.isPending}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  isLoading={addMember.isPending}
+                >
                   Add
                 </Button>
               </div>
@@ -260,7 +322,10 @@ export default function ProjectSettingsPage() {
 
           <div className="divide-y divide-slate-200 rounded-lg border border-slate-200">
             {project?.members.map((member) => (
-              <div key={member.id} className="flex flex-wrap items-center gap-3 px-4 py-3">
+              <div
+                key={member.id}
+                className="flex flex-wrap items-center gap-3 px-4 py-3"
+              >
                 <Avatar
                   name={member.user.name}
                   email={member.user.email}
@@ -270,7 +335,9 @@ export default function ProjectSettingsPage() {
                   <p className="truncate text-sm font-medium text-slate-950">
                     {member.user.name ?? member.user.email}
                   </p>
-                  <p className="truncate text-xs text-slate-500">{member.user.email}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {member.user.email}
+                  </p>
                 </div>
                 <RoleControl
                   role={member.role}
@@ -312,10 +379,15 @@ export default function ProjectSettingsPage() {
         <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-5">
             <h3 className="text-base font-semibold text-slate-950">Tags</h3>
-            <p className="text-sm text-slate-500">Project-scoped labels for filtering tasks.</p>
+            <p className="text-sm text-slate-500">
+              Project-scoped labels for filtering tasks.
+            </p>
           </div>
 
-          <form onSubmit={handleCreateTag} className="mb-5 grid gap-3 md:grid-cols-[1fr_220px_auto]">
+          <form
+            onSubmit={handleCreateTag}
+            className="mb-5 grid gap-3 md:grid-cols-[1fr_220px_auto]"
+          >
             <Input
               label="Tag name"
               value={newTagName}
@@ -323,7 +395,11 @@ export default function ProjectSettingsPage() {
               disabled={!canManageProject}
               onChange={(event) => setNewTagName(event.currentTarget.value)}
             />
-            <ColorPicker value={newTagColor} onChange={setNewTagColor} disabled={!canManageProject} />
+            <ColorPicker
+              value={newTagColor}
+              onChange={setNewTagColor}
+              disabled={!canManageProject}
+            />
             <div className="flex items-end">
               <Button
                 type="submit"
@@ -342,14 +418,8 @@ export default function ProjectSettingsPage() {
                 key={tag.id}
                 tag={tag}
                 disabled={!canManageProject}
-                onSave={(input) =>
-                  void updateTag.mutateAsync({
-                    id: tag.id,
-                    name: input.name,
-                    color: input.color,
-                  })
-                }
-                onDelete={() => void deleteTag.mutateAsync({ id: tag.id })}
+                onSave={(input) => void handleSaveTag(tag.id, input)}
+                onDelete={() => void handleDeleteTag(tag.id)}
               />
             ))}
             {tagsQuery.data?.length === 0 ? (
@@ -387,7 +457,9 @@ function RoleControl({
       value={role}
       disabled={disabled}
       className="w-36"
-      onChange={(event) => onChange(event.currentTarget.value as "ADMIN" | "MEMBER")}
+      onChange={(event) =>
+        onChange(event.currentTarget.value as "ADMIN" | "MEMBER")
+      }
     >
       <option value="MEMBER">Member</option>
       <option value="ADMIN">Admin</option>
@@ -477,7 +549,13 @@ function TagEditorRow({
         >
           Save
         </Button>
-        <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={onDelete}>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={disabled}
+          onClick={onDelete}
+        >
           Delete
         </Button>
       </div>

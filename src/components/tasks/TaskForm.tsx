@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { TagPicker } from "~/components/tags/TagPicker";
 import { Button } from "~/components/ui/Button";
@@ -42,6 +42,7 @@ type TaskFormProps = {
   members: ProjectMember[];
   tags: Tag[];
   initialValue?: TaskInitialValue;
+  initialValueKey?: string;
   includeStatus?: boolean;
   submitLabel: string;
   isSubmitting?: boolean;
@@ -57,6 +58,7 @@ export function TaskForm({
   members,
   tags,
   initialValue,
+  initialValueKey,
   includeStatus = false,
   submitLabel,
   isSubmitting = false,
@@ -65,28 +67,44 @@ export function TaskForm({
   onSubmit,
 }: TaskFormProps) {
   const [title, setTitle] = useState(initialValue?.title ?? "");
-  const [description, setDescription] = useState(initialValue?.description ?? "");
-  const [status, setStatus] = useState<TaskStatusValue>(initialValue?.status ?? defaultStatus);
+  const [description, setDescription] = useState(
+    initialValue?.description ?? "",
+  );
+  const [status, setStatus] = useState<TaskStatusValue>(
+    initialValue?.status ?? defaultStatus,
+  );
   const [priority, setPriority] = useState<TaskPriorityValue>(
     initialValue?.priority ?? defaultPriority,
   );
-  const [deadline, setDeadline] = useState(toDateInputValue(initialValue?.deadline));
+  const [deadline, setDeadline] = useState(
+    toDateInputValue(initialValue?.deadline),
+  );
   const [assigneeId, setAssigneeId] = useState(initialValue?.assigneeId ?? "");
-  const [tagIds, setTagIds] = useState(initialValue?.tags.map((tag) => tag.tagId) ?? []);
+  const [tagIds, setTagIds] = useState(
+    initialValue?.tags.map((tag) => tag.tagId) ?? [],
+  );
   const [titleError, setTitleError] = useState("");
+  const initialValueRef = useRef(initialValue);
+  const resetKey =
+    initialValueKey ?? (initialValue ? "initial-value" : "empty");
 
   useEffect(() => {
-    if (!initialValue) return;
-    setTitle(initialValue.title);
-    setDescription(initialValue.description ?? "");
-    setStatus(initialValue.status ?? defaultStatus);
-    setPriority(initialValue.priority);
-    setDeadline(toDateInputValue(initialValue.deadline));
-    setAssigneeId(initialValue.assigneeId ?? "");
-    setTagIds(initialValue.tags.map((tag) => tag.tagId));
+    initialValueRef.current = initialValue;
   }, [initialValue]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    const nextInitialValue = initialValueRef.current;
+    if (!nextInitialValue) return;
+    setTitle(nextInitialValue.title);
+    setDescription(nextInitialValue.description ?? "");
+    setStatus(nextInitialValue.status ?? defaultStatus);
+    setPriority(nextInitialValue.priority);
+    setDeadline(toDateInputValue(nextInitialValue.deadline));
+    setAssigneeId(nextInitialValue.assigneeId ?? "");
+    setTagIds(nextInitialValue.tags.map((tag) => tag.tagId));
+  }, [resetKey]);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setTitleError("");
 
@@ -136,7 +154,9 @@ export function TaskForm({
           <Select
             label="Status"
             value={status}
-            onChange={(event) => setStatus(event.currentTarget.value as TaskStatusValue)}
+            onChange={(event) =>
+              setStatus(event.currentTarget.value as TaskStatusValue)
+            }
           >
             {TASK_STATUSES.map((item) => (
               <option key={item} value={item}>
@@ -148,7 +168,9 @@ export function TaskForm({
         <Select
           label="Priority"
           value={priority}
-          onChange={(event) => setPriority(event.currentTarget.value as TaskPriorityValue)}
+          onChange={(event) =>
+            setPriority(event.currentTarget.value as TaskPriorityValue)
+          }
         >
           {TASK_PRIORITIES.map((item) => (
             <option key={item} value={item}>

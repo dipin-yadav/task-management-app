@@ -1,0 +1,786 @@
+Starting CodeRabbit review in plain text mode...
+
+Review directory: /home/dipin/task-management-app
+
+Connecting to review service
+Setting up
+Summarizing
+Reviewing
+
+============================================================================
+File: src/pages/auth/signin.tsx
+Line: 16 to 34
+Type: potential_issue
+
+Comment:
+Missing error handling for network failures.
+
+If signIn throws an exception (e.g., network error), the loading state remains true and the button stays disabled. Wrap in try-catch to ensure consistent state recovery.
+
+
+🛡️ Proposed fix
+
+   const handleSubmit = async (e: React.FormEvent) => {
+     e.preventDefault();
+     setError("");
+     setLoading(true);
+
+-    const result = await signIn("credentials", {
+-      email,
+-      password,
+-      redirect: false,
+-    });
+-
+-    setLoading(false);
+-
+-    if (result?.error) {
+-      setError("Invalid email or password");
+-    } else {
+-      void router.push("/");
++    try {
++      const result = await signIn("credentials", {
++        email,
++        password,
++        redirect: false,
++      });
++
++      if (result?.error) {
++        setError("Invalid email or password");
++      } else {
++        void router.push("/");
++      }
++    } catch {
++      setError("An unexpected error occurred. Please try again.");
++    } finally {
++      setLoading(false);
+     }
+   };
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/auth/signin.tsx around lines 16 - 34, The handleSubmit function currently awaits signIn without catch, so network exceptions leave loading true; wrap the signIn call in a try/catch/finally inside handleSubmit, call setLoading(true) before the try, in try await signIn and handle success (router.push("/")), in catch setError with a network/fetch-friendly message (or the caught error.message), and in finally call setLoading(false) to guarantee the button is re-enabled; reference handleSubmit, signIn, setLoading, setError, and router.push when making the changes.
+
+============================================================================
+File: src/components/ui/Button.tsx
+Line: 56 to 62
+Type: potential_issue
+
+Comment:
+Add type="button" default and aria-busy for accessibility.
+
+Without an explicit type, buttons default to "submit" inside forms, which can trigger unintended submissions. Additionally, aria-busy improves screen reader feedback during loading.
+
+
+🛡️ Proposed fix
+
+
+
+
+
+Note: Spreading {...props} after allows callers to override type to "submit" when needed.
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/components/ui/Button.tsx around lines 56 - 62, The Button component is missing a default type and ARIA busy state; update the JSX for the  in Button (src/components/ui/Button.tsx) to include type="button" (placed before spreading {...props} so callers can override to "submit") and add aria-busy={isLoading} (so screen readers know when the button is loading); keep existing disabled/isLoading logic and className usage intact.
+
+============================================================================
+File: src/server/auth/signup.ts
+Line: 6
+Type: potential_issue
+
+Comment:
+Increase minimum password length for better security.
+
+A minimum password length of 6 characters is weak by modern security standards. NIST and OWASP recommend at least 8 characters, with many organizations requiring 12 or more for stronger protection against brute-force attacks.
+
+
+
+
+🔒 Proposed fix to strengthen password requirements
+
+-  password: z.string().min(6, "Password must be at least 6 characters"),
++  password: z.string().min(8, "Password must be at least 8 characters"),
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/auth/signup.ts at line 6, Update the password validation in the signup schema: change the Zod rule for the "password" field in signup.ts from .min(6, ...) to a stronger minimum (e.g., .min(12, "Password must be at least 12 characters")) and update the validation message accordingly so the schema (password: z.string().min(...)) enforces the new minimum length.
+
+============================================================================
+File: src/components/ui/Modal.tsx
+Line: 16 to 31
+Type: potential_issue
+
+Comment:
+Add ARIA attributes and keyboard support for accessibility.
+
+The modal is missing essential accessibility features:
+1. Add role="dialog" and aria-modal="true" to the modal panel
+2. Add aria-labelledby referencing the title for screen readers
+3. Consider handling the Escape key to close the modal
+
+
+
+♿ Proposed fix for accessibility
+
++import { useEffect, useId, type ReactNode } from "react";
+-import { type ReactNode } from "react";
+
+ import { Button } from "~/components/ui/Button";
+
+ // ... props type unchanged ...
+
+ export function Modal({ open, title, description, children, onClose }: ModalProps) {
++  const titleId = useId();
++
++  useEffect(() => {
++    if (!open) return;
++    const handleKeyDown = (e: KeyboardEvent) => {
++      if (e.key === "Escape") onClose();
++    };
++    document.addEventListener("keydown", handleKeyDown);
++    return () => document.removeEventListener("keydown", handleKeyDown);
++  }, [open, onClose]);
++
+   if (!open) return null;
+
+   return (
+
+-
++
+
+
+-            {title}
++            {title}
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/components/ui/Modal.tsx around lines 16 - 31, The Modal component is missing ARIA attributes and keyboard support; update the modal panel element returned by the Modal component to include role="dialog" and aria-modal="true", add an aria-labelledby that references a stable id on the title element (e.g., generate or use titleId and set it on the ), and implement Escape-key handling inside the Modal component (add a useEffect that listens for 'keydown' and calls the existing onClose when event.key === 'Escape', cleaning up the listener on unmount) so screen readers and keyboard users can correctly interact with the dialog.
+
+============================================================================
+File: src/pages/dashboard.tsx
+Line: 140
+Type: potential_issue
+
+Comment:
+Guard against missing deadlines in recent activity.
+
+TaskListPanel is used for both "Upcoming deadlines" (filtered by deadline) and "Recent activity" (which may include tasks without deadlines). If task.deadline is null/undefined, formatDate may render invalid output.
+
+
+
+
+🛡️ Proposed fix
+
+-            Due {formatDate(task.deadline)}
++            {task.deadline ? (
++              Due {formatDate(task.deadline)}
++            ) : null}
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/dashboard.tsx at line 140, TaskListPanel renders a Due line using formatDate(task.deadline) but Recent activity can include tasks without deadlines, causing invalid output; update TaskListPanel to guard against missing deadlines by checking task.deadline (or task?.deadline) before calling formatDate and only render the  due line when a deadline exists; reference the component TaskListPanel and the formatDate call so locate and wrap or conditionally render the "Due ..." paragraph when task.deadline is non-null/defined.
+
+============================================================================
+File: src/pages/api/auth/signup.ts
+Line: 20 to 38
+Type: potential_issue
+
+Comment:
+Handle Prisma unique constraint violation to prevent race condition.
+
+There's a TOCTOU race condition between checking if a user exists and creating the user. If two concurrent requests attempt to sign up with the same email, both may pass the findUnique check, and one will fail with a Prisma unique constraint error (P2002), resulting in a 500 error instead of the expected 409.
+
+
+🔧 Proposed fix to catch unique constraint violation
+
++import { Prisma } from "@prisma/client";
+
+
+Then update the error handling:
+
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors[0]?.message ?? "Validation error" });
+    }
++
++   if (
++     error instanceof Prisma.PrismaClientKnownRequestError &&
++     error.code === "P2002"
++   ) {
++     return res.status(409).json({ error: "User with this email already exists" });
++   }
+
+    console.error("Signup error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/api/auth/signup.ts around lines 20 - 38, The signup flow currently checks db.user.findUnique then calls db.user.create which can race; wrap the db.user.create call in a try/catch and handle Prisma unique-constraint errors by detecting Prisma.PrismaClientKnownRequestError with code 'P2002' and returning res.status(409).json({ error: "User with this email already exists" }) instead of letting it bubble to a 500; keep the existing findUnique check for fast-fail but rely on the caught P2002 from db.user.create as the definitive guard.
+
+============================================================================
+File: src/utils/format.ts
+Line: 48 to 56
+Type: potential_issue
+
+Comment:
+Invalid date strings will produce "Invalid Date" output.
+
+If date is a malformed string, new Date(date) returns an invalid Date object, and the formatter will output "Invalid Date" rather than the "No date" fallback. Consider validating the parsed date:
+
+
+
+
+🛡️ Proposed fix to handle invalid dates
+
+ export function formatDate(date: Date | string | null | undefined) {
+   if (!date) return "No date";
+-  return dateFormatter.format(new Date(date));
++  const parsed = new Date(date);
++  if (Number.isNaN(parsed.getTime())) return "No date";
++  return dateFormatter.format(parsed);
+ }
+
+ export function formatDateTime(date: Date | string | null | undefined) {
+   if (!date) return "No date";
+-  return dateTimeFormatter.format(new Date(date));
++  const parsed = new Date(date);
++  if (Number.isNaN(parsed.getTime())) return "No date";
++  return dateTimeFormatter.format(parsed);
+ }
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/utils/format.ts around lines 48 - 56, Both formatDate and formatDateTime currently call new Date(date) without validating the result, so malformed strings produce "Invalid Date"; update both functions (formatDate and formatDateTime) to parse the input into a Date object, check validity via isNaN(parsed.getTime()) (or similar), and return "No date" when the parsed date is invalid or input is falsy, otherwise format with dateFormatter/dateTimeFormatter.
+
+============================================================================
+File: src/server/api/routers/tag.ts
+Line: 141 to 147
+Type: potential_issue
+
+Comment:
+Missing explicit tag existence check leads to misleading error.
+
+If the tag doesn't exist, tag?.projectId evaluates to undefined, causing the condition undefined !== task.projectId to be true. This throws a BAD_REQUEST with "Tag does not belong to this project" instead of the appropriate NOT_FOUND error.
+
+
+
+🐛 Proposed fix
+
+       // Verify the tag belongs to the same project
+       const tag = await ctx.db.tag.findUnique({ where: { id: input.tagId } });
++      if (!tag) {
++        throw new TRPCError({ code: "NOT_FOUND", message: "Tag not found" });
++      }
+-      if (tag?.projectId !== task.projectId) {
++      if (tag.projectId !== task.projectId) {
+         throw new TRPCError({
+           code: "BAD_REQUEST",
+           message: "Tag does not belong to this project",
+         });
+       }
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/tag.ts around lines 141 - 147, The current check uses tag?.projectId which conflates "tag missing" with "tag belongs to different project"; update the logic after ctx.db.tag.findUnique to first explicitly check if tag is null and throw a TRPCError with code "NOT_FOUND" (e.g., "Tag not found"), and only if tag exists compare tag.projectId to task.projectId and throw the existing TRPCError with code "BAD_REQUEST" when they differ; refer to the tag variable returned by ctx.db.tag.findUnique and task.projectId to locate where to add the explicit null check and error.
+
+============================================================================
+File: src/components/tasks/TaskForm.tsx
+Line: 78 to 87
+Type: potential_issue
+
+Comment:
+Object reference in dependency array may cause unexpected form resets.
+
+If the parent component passes initialValue as an inline object or recreates it on each render, this effect will re-run and reset the form fields—potentially losing user input mid-edit.
+
+Consider one of these approaches:
+1. Memoize initialValue in the parent component
+2. Use a stable identifier (e.g., task ID) as the dependency instead
+3. Only run this effect on mount or when a specific "reset" signal changes
+
+
+
+
+💡 Option: Use task ID or a reset key as dependency
+
++type TaskFormProps = {
++  members: ProjectMember[];
++  tags: Tag[];
++  initialValue?: TaskInitialValue;
++  initialValueKey?: string; // e.g., task.id or a unique key
+   includeStatus?: boolean;
+   ...
+ };
+
+ export function TaskForm({
+   ...
+   initialValue,
++  initialValueKey,
+   ...
+ }: TaskFormProps) {
+   ...
+   useEffect(() => {
+     if (!initialValue) return;
+     setTitle(initialValue.title);
+     ...
+-  }, [initialValue]);
++  }, [initialValueKey]);
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/components/tasks/TaskForm.tsx around lines 78 - 87, The effect that resets form fields (the useEffect that calls setTitle, setDescription, setStatus, setPriority, setDeadline, setAssigneeId, setTagIds) currently depends on the entire initialValue object which can be re-created by the parent and unexpectedly reset the form; change the dependency to a stable identifier instead (e.g., use initialValue?.id or a dedicated resetKey prop) or run the effect only on mount/reset signal so the effect triggers only when the specific task identity or explicit reset changes rather than whenever the object reference changes.
+
+============================================================================
+File: src/pages/projects/[id]/index.tsx
+Line: 160 to 175
+Type: potential_issue
+
+Comment:
+Missing error state handling for task queries.
+
+The component handles loading and empty states but doesn't display error states if tasksQuery (or other queries) fails. Users would see nothing if the API returns an error.
+
+
+🛡️ Proposed fix to add error handling
+
+ {tasksQuery.isLoading ? Loading tasks... : null}
+
++{tasksQuery.isError ? (
++  Failed to load tasks. Please try again.
++) : null}
++
+-{tasksQuery.data && tasksQuery.data.length > 0 ? (
++{tasksQuery.data && tasksQuery.data.length > 0 && !tasksQuery.isError ? (
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/projects/[id]/index.tsx around lines 160 - 175, The UI currently handles loading and empty states but not query failures; update the component to check tasksQuery.isError (and optionally tasksQuery.error) and render a visible error state when the tasks API fails (e.g., show an error banner or reuse EmptyState with an error title/description that includes tasksQuery.error.message), leaving existing TaskBoard, projectId, and handleStatusChange usages intact; ensure the error branch is mutually exclusive with the loading and empty branches so users see a clear error message when tasksQuery fails.
+
+============================================================================
+File: src/pages/projects/[id]/tasks/[taskId].tsx
+Line: 69 to 92
+Type: potential_issue
+
+Comment:
+Partial update risk if status mutation fails.
+
+If updateTask.mutateAsync succeeds but updateStatus.mutateAsync fails (lines 83-85), the task fields are saved while the status remains unchanged. The user sees an error message but the task was already partially updated, leading to confusion.
+
+Consider combining both updates into a single transaction on the backend, or clearly communicate partial success to the user.
+
+
+🛠️ Suggested approach to handle partial success
+
+     } catch (error) {
+-      setMessage(getErrorMessage(error));
++      const errorMsg = getErrorMessage(error);
++      // Check if we're in the status update phase (task fields already saved)
++      if (updateTask.isSuccess && !updateStatus.isSuccess) {
++        setMessage(Task fields saved, but status update failed: ${errorMsg});
++      } else {
++        setMessage(errorMsg);
++      }
+     }
+
+
+Alternatively, consider adding a backend procedure that updates both task fields and status atomically.
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/projects/[id]/tasks/[taskId].tsx around lines 69 - 92, handleUpdateTask currently risks partial updates because updateTask.mutateAsync may succeed while updateStatus.mutateAsync fails; change the flow to perform an atomic update or implement a rollback: preferably create/consume a single backend procedure (e.g., updateTaskAndStatus) and call it from handleUpdateTask instead of calling updateTask.mutateAsync and updateStatus.mutateAsync separately; if backend change isn't possible now, at minimum either call updateStatus.mutateAsync first then updateTask.mutateAsync, or on updateStatus failure invoke updateTask.mutateAsync to restore original task fields (use the current task object to get previous values), and ensure setMessage reflects partial success/rollback and setEditing is only toggled after both operations succeed.
+
+============================================================================
+File: prisma/schema.prisma
+Line: 139 to 143
+Type: potential_issue
+
+Comment:
+Specify explicit onDelete behavior for creator and assignee relations.
+
+The creator and assignee relations lack explicit onDelete clauses, defaulting to Restrict. This is inconsistent with other user relations in this schema (Account, Session, ProjectMember) which use Cascade.
+
+With the current implicit Restrict:
+- Deleting a User who has created tasks will fail with a foreign key violation
+- Deleting a User assigned to tasks will also fail
+
+Consider the intended behavior:
+- For creator: If tasks should be preserved, consider making creatorId optional and using SetNull, or use Cascade if tasks should be deleted with the creator
+- For assignee: SetNull is likely appropriate since the field is already optional
+
+
+
+
+Suggested fix (using SetNull for assignee, explicit Restrict for creator)
+
+  creatorId   String
+- creator     User         @relation("TaskCreator", fields: [creatorId], references: [id])
++ creator     User         @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+
+  assigneeId  String?
+- assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
++ assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @prisma/schema.prisma around lines 139 - 143, Add explicit onDelete behaviors to the Task relations: update the creator relation (creatorId / creator @relation("TaskCreator")) to include onDelete: Restrict so deletes of Users with created tasks are explicitly restricted, and update the assignee relation (assigneeId / assignee @relation("TaskAssignee")) to include onDelete: SetNull so deleting an assigned User clears assigneeId; keep creatorId required and assigneeId optional as in the diff.
+
+============================================================================
+File: src/server/api/routers/task.ts
+Line: 133 to 141
+Type: potential_issue
+
+Comment:
+Same tag validation issue: verify tags belong to the project.
+
+Similar to create, the tagIds should be validated to ensure they belong to the same project as the task.
+
+
+
+🔒 Proposed fix
+
+       if (input.assigneeId) {
+         await verifyProjectMembership(ctx.db, task.projectId, input.assigneeId);
+       }
+
++      if (input.tagIds && input.tagIds.length > 0) {
++        const validTags = await ctx.db.tag.count({
++          where: { id: { in: input.tagIds }, projectId: task.projectId },
++        });
++        if (validTags !== input.tagIds.length) {
++          throw new TRPCError({
++            code: "BAD_REQUEST",
++            message: "One or more tags do not belong to this project",
++          });
++        }
++      }
++
+       return ctx.db.$transaction(async (tx) => {
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/task.ts around lines 133 - 141, Within the transaction in the task update resolver (the ctx.db.$transaction block handling input.tagIds, tx.taskTag.deleteMany/createMany for input.id), add validation that all input.tagIds belong to the same project as the task: load the task (by input.id) to get its projectId, query the tags by the given tagIds and verify every tag.projectId === task.projectId, and if any mismatch throw/return an appropriate error before performing deleteMany/createMany; ensure the validation runs inside the same transaction and use the same tx client to query tags (e.g., tx.task.findUnique or tx.tag.findMany) so you don’t attach tags from other projects.
+
+============================================================================
+File: src/pages/projects/[id]/index.tsx
+Line: 74 to 76
+Type: potential_issue
+
+Comment:
+Missing error handling for status changes.
+
+handleStatusChange uses fire-and-forget with void, meaning status update failures from the task board will be silently ignored. Users won't be notified if drag-and-drop status changes fail.
+
+
+🛡️ Proposed fix with error handling
+
+ const handleStatusChange = (taskId: string, status: TaskStatusValue) => {
+-  void updateStatus.mutateAsync({ id: taskId, status });
++  updateStatus.mutate(
++    { id: taskId, status },
++    {
++      onError: (error) => {
++        // Consider showing a toast notification here
++        console.error("Failed to update task status:", error);
++      },
++    },
++  );
+ };
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/projects/[id]/index.tsx around lines 74 - 76, The handleStatusChange handler currently calls updateStatus.mutateAsync with void, swallowing failures; update it to handle errors by awaiting or chaining the promise from updateStatus.mutateAsync (or using the mutation's onError) and surface failures to the user (e.g., show a toast/notification and revert local UI state if needed). Specifically, update the handleStatusChange function to call updateStatus.mutateAsync({ id: taskId, status }) and catch errors (or use try/catch if awaiting) to call your notification utility and undo any optimistic changes so users are notified when the status update fails.
+
+============================================================================
+File: src/pages/profile.tsx
+Line: 30
+Type: potential_issue
+
+Comment:
+Missing import for React.FormEvent.
+
+React.FormEvent is referenced but React is not imported, causing a compilation error. Per coding guidelines, use an inline type import.
+
+
+🐛 Proposed fix
+
+-import { useEffect, useState } from "react";
++import { useEffect, useState, type FormEvent } from "react";
+
+
+Then update the handler signature:
+
+-  const handleSubmit = async (event: React.FormEvent) => {
++  const handleSubmit = async (event: FormEvent) => {
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/profile.tsx at line 30, The handler handleSubmit references React.FormEvent but React isn't imported; add an inline type import and update the signature to use it: import type { FormEvent } from 'react' and change the handleSubmit parameter to (event: FormEvent) so the type resolves without importing the whole React namespace.
+
+============================================================================
+File: src/server/api/routers/project.ts
+Line: 214 to 228
+Type: potential_issue
+
+Comment:
+Same authorization timing issue.
+
+Apply the same fix: verify OWNER role before checking project existence.
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/project.ts around lines 214 - 228, The current mutation checks project existence with ctx.db.project.findUnique before calling verifyProjectMembership, which leaks timing/authorization info; move the ownership check earlier by invoking verifyProjectMembership(ctx.db, input.id, ctx.session.user.id, ["OWNER"]) prior to querying ctx.db.project.findUnique (or otherwise perform the role check first) so authorization is validated before returning any not-found error from the project lookup.
+
+============================================================================
+File: src/pages/projects/[id]/settings.tsx
+Line: 340 to 354
+Type: potential_issue
+
+Comment:
+Errors from tag mutations are silently swallowed.
+
+Using void updateTag.mutateAsync(...) and void deleteTag.mutateAsync(...) without error handling means failures won't display feedback to the user. Unlike the form handlers that wrap mutations in try/catch, these inline callbacks have no error handling.
+
+
+
+
+🔧 Suggested fix: Add error handling
+
+Either add onError to the mutation definitions:
+
+  const updateTag = api.tag.update.useMutation({
+    onSuccess: () => {
+      void utils.tag.list.invalidate({ projectId });
+      void utils.task.list.invalidate();
+    },
++   onError: (error) => {
++     setMessage(getErrorMessage(error));
++   },
+  });
+  const deleteTag = api.tag.delete.useMutation({
+    onSuccess: () => {
+      void utils.tag.list.invalidate({ projectId });
+      void utils.task.list.invalidate();
+    },
++   onError: (error) => {
++     setMessage(getErrorMessage(error));
++   },
+  });
+
+
+Or wrap the calls in try/catch handlers similar to other form submissions.
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/projects/[id]/settings.tsx around lines 340 - 354, The tag update/delete callbacks are swallowing errors by calling void updateTag.mutateAsync(...) and void deleteTag.mutateAsync(...); change these inline callbacks in the tagsQuery.data?.map rendering so errors are surfaced—either await the mutateAsync call inside an async function and wrap it in try/catch (e.g., make the onSave and onDelete handlers async and try { await updateTag.mutateAsync(...) } catch (err) { show error via your toast/logger } ), or attach an onError handler to the updateTag and deleteTag mutation definitions so failures are handled centrally; update the TagEditorRow props (onSave/onDelete) to use the chosen approach and ensure user-facing error feedback is produced.
+
+============================================================================
+File: src/server/api/routers/task.ts
+Line: 38 to 52
+Type: potential_issue
+
+Comment:
+Validate that tags belong to the project before associating them.
+
+The tagIds are accepted without verification that they belong to the same project. A user with access to multiple projects could associate tags from project A to a task in project B, causing data integrity issues.
+
+
+
+🔒 Proposed fix to validate tag ownership
+
+       if (input.assigneeId) {
+         await verifyProjectMembership(ctx.db, input.projectId, input.assigneeId);
+       }
+
++      if (input.tagIds && input.tagIds.length > 0) {
++        const validTags = await ctx.db.tag.count({
++          where: { id: { in: input.tagIds }, projectId: input.projectId },
++        });
++        if (validTags !== input.tagIds.length) {
++          throw new TRPCError({
++            code: "BAD_REQUEST",
++            message: "One or more tags do not belong to this project",
++          });
++        }
++      }
++
+       return ctx.db.task.create({
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/task.ts around lines 38 - 52, The current task creation accepts input.tagIds without verifying they belong to the same project, so before calling ctx.db.task.create (and before using the tags: { create: ... } block) query ctx.db.tag.findMany for the provided tagIds filtered by projectId === input.projectId, compare the returned ids to input.tagIds and throw a validation/error (e.g., BadRequest) if any tag is missing or belongs to another project; only then proceed to associate tags (the existing tags: { create: ... } or connect payload) so you ensure tags referenced in task creation actually belong to the target project.
+
+============================================================================
+File: src/server/api/routers/project.ts
+Line: 107 to 141
+Type: potential_issue
+
+Comment:
+Authorization check should precede data retrieval.
+
+The current order (fetch → check NOT_FOUND → verify membership) reveals whether a project ID exists based on the error response. An unauthorized user receives NOT_FOUND for non-existent projects but FORBIDDEN for existing ones, enabling project ID enumeration.
+
+Consider verifying membership first or combining into a single query:
+
+
+
+
+🛡️ Suggested fix
+
+   getById: protectedProcedure
+     .input(z.object({ id: z.string().cuid() }))
+     .query(async ({ ctx, input }) => {
++      // Verify membership first to avoid leaking project existence
++      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id);
++
+       const project = await ctx.db.project.findUnique({
+         where: { id: input.id },
+         include: {
+           members: {
+             include: {
+               user: {
+                 select: {
+                   id: true,
+                   name: true,
+                   email: true,
+                   image: true,
+                 },
+               },
+             },
+             orderBy: { joinedAt: "asc" },
+           },
+           owner: {
+             select: { id: true, name: true, email: true, image: true },
+           },
+         },
+       });
+
+       if (!project) {
+         throw new TRPCError({
+           code: "NOT_FOUND",
+           message: "Project not found",
+         });
+       }
+
+-      // Verify membership
+-      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id);
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/project.ts around lines 107 - 141, The authorization check happens after fetching the project, leaking existence information; move the membership verification to run before returning data by calling verifyProjectMembership(ctx.db, input.id, ctx.session.user.id) prior to the ctx.db.project.findUnique call (or alternatively change the findUnique to include a members filter that requires the current user), and only then fetch and return the project; adjust error handling so NOT_FOUND is only used when the pre-check passes and the subsequent fetch fails, and use FORBIDDEN from verifyProjectMembership for unauthorized access.
+
+============================================================================
+File: src/server/api/routers/project.ts
+Line: 236 to 251
+Type: potential_issue
+
+Comment:
+Potential privilege inconsistency: ADMINs can add users with ADMIN role.
+
+An ADMIN can add new members with role ADMIN (line 241), but updateMemberRole restricts role changes to OWNER only (line 371). This inconsistency allows ADMINs to grant ADMIN privileges indirectly by adding new members with elevated roles.
+
+If the intent is that only OWNERs can grant ADMIN status, consider restricting who can set the ADMIN role during member creation:
+
+
+
+
+🛡️ Suggested fix
+
+   addMember: protectedProcedure
+     .input(
+       z.object({
+         projectId: z.string().cuid(),
+         email: z.string().email(),
+         role: z.enum(["ADMIN", "MEMBER"]).default("MEMBER"),
+       }),
+     )
+     .mutation(async ({ ctx, input }) => {
+       // Verify caller has OWNER/ADMIN role
+-      await verifyProjectMembership(
++      const callerMembership = await verifyProjectMembership(
+         ctx.db,
+         input.projectId,
+         ctx.session.user.id,
+         ["OWNER", "ADMIN"],
+       );
+
++      // Only OWNER can add members as ADMIN
++      if (input.role === "ADMIN" && callerMembership.role !== "OWNER") {
++        throw new TRPCError({
++          code: "FORBIDDEN",
++          message: "Only project owner can add members with ADMIN role",
++        });
++      }
++
+       // Find user by email
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/project.ts around lines 236 - 251, The addMember mutation currently allows callers with OWNER or ADMIN (via verifyProjectMembership) to create new members with role "ADMIN", which conflicts with updateMemberRole's OWNER-only restriction; modify addMember so that if input.role === "ADMIN" you perform an OWNER-only check (e.g., call verifyProjectMembership with ["OWNER"] or otherwise verify the caller's membership role) and reject/throw if the caller is not OWNER, otherwise proceed as before; reference the addMember mutation, verifyProjectMembership, and updateMemberRole symbols when making this change.
+
+============================================================================
+File: src/server/api/routers/project.ts
+Line: 177 to 194
+Type: potential_issue
+
+Comment:
+Same authorization timing issue as getById.
+
+Move the membership verification before the project existence check to prevent project ID enumeration.
+
+
+
+
+🛡️ Suggested fix
+
+     .mutation(async ({ ctx, input }) => {
++      // Check OWNER or ADMIN first
++      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id, [
++        "OWNER",
++        "ADMIN",
++      ]);
++
+       // Verify project exists
+       const project = await ctx.db.project.findUnique({
+         where: { id: input.id },
+       });
+
+       if (!project) {
+         throw new TRPCError({
+           code: "NOT_FOUND",
+           message: "Project not found",
+         });
+       }
+
+-      // Check OWNER or ADMIN
+-      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id, [
+-        "OWNER",
+-        "ADMIN",
+-      ]);
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/project.ts around lines 177 - 194, Move the authorization check before the database existence lookup to prevent project ID enumeration: call verifyProjectMembership(ctx.db, input.id, ctx.session.user.id, ["OWNER","ADMIN"]) prior to invoking ctx.db.project.findUnique for the project, and only after successful membership verification perform the findUnique and keep the TRPCError NOT_FOUND handling for missing projects; update the mutation flow so verifyProjectMembership runs first and the project existence check follows.
+
+Review completed: 21 findings ✔

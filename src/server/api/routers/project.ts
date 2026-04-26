@@ -107,6 +107,8 @@ export const projectRouter = createTRPCRouter({
   getById: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .query(async ({ ctx, input }) => {
+      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id);
+
       const project = await ctx.db.project.findUnique({
         where: { id: input.id },
         include: {
@@ -135,9 +137,6 @@ export const projectRouter = createTRPCRouter({
           message: "Project not found",
         });
       }
-
-      // Verify membership
-      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id);
 
       // Get task counts grouped by status
       const taskCounts = await ctx.db.task.groupBy({
@@ -175,6 +174,12 @@ export const projectRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Check OWNER or ADMIN
+      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id, [
+        "OWNER",
+        "ADMIN",
+      ]);
+
       // Verify project exists
       const project = await ctx.db.project.findUnique({
         where: { id: input.id },
@@ -186,12 +191,6 @@ export const projectRouter = createTRPCRouter({
           message: "Project not found",
         });
       }
-
-      // Check OWNER or ADMIN
-      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id, [
-        "OWNER",
-        "ADMIN",
-      ]);
 
       const updated = await ctx.db.project.update({
         where: { id: input.id },
@@ -212,6 +211,10 @@ export const projectRouter = createTRPCRouter({
   delete: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
+      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id, [
+        "OWNER",
+      ]);
+
       const project = await ctx.db.project.findUnique({
         where: { id: input.id },
       });
@@ -222,10 +225,6 @@ export const projectRouter = createTRPCRouter({
           message: "Project not found",
         });
       }
-
-      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id, [
-        "OWNER",
-      ]);
 
       await ctx.db.project.delete({ where: { id: input.id } });
     }),
@@ -243,12 +242,19 @@ export const projectRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify caller has OWNER/ADMIN role
-      await verifyProjectMembership(
+      const callerMembership = await verifyProjectMembership(
         ctx.db,
         input.projectId,
         ctx.session.user.id,
         ["OWNER", "ADMIN"],
       );
+
+      if (input.role === "ADMIN" && callerMembership.role !== "OWNER") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only project owner can add members with ADMIN role",
+        });
+      }
 
       // Find user by email
       const userToAdd = await ctx.db.user.findUnique({

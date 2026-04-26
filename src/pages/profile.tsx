@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import { AppLayout } from "~/components/layout/AppLayout";
 import { Avatar } from "~/components/ui/Avatar";
@@ -27,7 +27,7 @@ export default function ProfilePage() {
     setImage(profileQuery.data.image ?? "");
   }, [profileQuery.data]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage("");
     const trimmedName = name.trim();

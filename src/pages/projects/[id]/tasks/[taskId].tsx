@@ -20,12 +20,16 @@ import {
 export default function TaskDetailPage() {
   const router = useRouter();
   const projectId = typeof router.query.id === "string" ? router.query.id : "";
-  const taskId = typeof router.query.taskId === "string" ? router.query.taskId : "";
+  const taskId =
+    typeof router.query.taskId === "string" ? router.query.taskId : "";
   const utils = api.useUtils();
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState("");
 
-  const taskQuery = api.task.getById.useQuery({ id: taskId }, { enabled: Boolean(taskId) });
+  const taskQuery = api.task.getById.useQuery(
+    { id: taskId },
+    { enabled: Boolean(taskId) },
+  );
   const projectQuery = api.project.getById.useQuery(
     { id: projectId },
     { enabled: Boolean(projectId) },
@@ -36,14 +40,6 @@ export default function TaskDetailPage() {
   );
 
   const updateTask = api.task.update.useMutation({
-    onSuccess: () => {
-      void utils.task.getById.invalidate({ id: taskId });
-      void utils.task.list.invalidate();
-      void utils.dashboard.getRecentActivity.invalidate();
-      void utils.dashboard.getMyTasks.invalidate();
-    },
-  });
-  const updateStatus = api.task.updateStatus.useMutation({
     onSuccess: () => {
       void utils.task.getById.invalidate({ id: taskId });
       void utils.task.list.invalidate();
@@ -74,15 +70,12 @@ export default function TaskDetailPage() {
         id: taskId,
         title: values.title,
         description: values.description ?? "",
+        status: values.status,
         priority: values.priority,
         deadline: values.deadline ?? null,
         assigneeId: values.assigneeId ?? null,
         tagIds: values.tagIds,
       });
-
-      if (task && values.status !== task.status) {
-        await updateStatus.mutateAsync({ id: taskId, status: values.status });
-      }
 
       setEditing(false);
       setMessage("Task updated.");
@@ -108,7 +101,10 @@ export default function TaskDetailPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
-              <Link href="/projects" className="font-medium text-slate-500 hover:text-slate-950">
+              <Link
+                href="/projects"
+                className="font-medium text-slate-500 hover:text-slate-950"
+              >
                 Projects
               </Link>
               <span className="text-slate-400">/</span>
@@ -124,7 +120,11 @@ export default function TaskDetailPage() {
             </h2>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button type="button" variant="secondary" onClick={() => setEditing((value) => !value)}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setEditing((value) => !value)}
+            >
               {editing ? "View task" : "Edit task"}
             </Button>
             <Button
@@ -159,9 +159,12 @@ export default function TaskDetailPage() {
                 assigneeId: task.assigneeId,
                 tags: task.tags.map(({ tag }) => ({ tagId: tag.id })),
               }}
+              initialValueKey={task.id}
               submitLabel="Save task"
-              isSubmitting={updateTask.isPending || updateStatus.isPending}
-              errorMessage={message && message !== "Task updated." ? message : undefined}
+              isSubmitting={updateTask.isPending}
+              errorMessage={
+                message && message !== "Task updated." ? message : undefined
+              }
               onCancel={() => setEditing(false)}
               onSubmit={handleUpdateTask}
             />
@@ -171,8 +174,12 @@ export default function TaskDetailPage() {
         {!editing && task ? (
           <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex flex-wrap gap-2">
-              <Badge tone={statusTone[task.status]}>{statusLabels[task.status]}</Badge>
-              <Badge tone={priorityTone[task.priority]}>{priorityLabels[task.priority]}</Badge>
+              <Badge tone={statusTone[task.status]}>
+                {statusLabels[task.status]}
+              </Badge>
+              <Badge tone={priorityTone[task.priority]}>
+                {priorityLabels[task.priority]}
+              </Badge>
               {task.tags.map(({ tag }) => (
                 <TagBadge key={tag.id} name={tag.name} color={tag.color} />
               ))}
@@ -200,20 +207,36 @@ export default function TaskDetailPage() {
                       image={task.assignee?.image}
                     />
                     <span className="text-sm font-medium text-slate-800">
-                      {task.assignee?.name ?? task.assignee?.email ?? "Unassigned"}
+                      {task.assignee?.name ??
+                        task.assignee?.email ??
+                        "Unassigned"}
                     </span>
                   </div>
                 </div>
-                <DetailItem label="Creator" value={task.creator.name ?? task.creator.email ?? "Unknown"} />
-                <DetailItem label="Deadline" value={formatDateTime(task.deadline)} />
-                <DetailItem label="Created" value={formatDateTime(task.createdAt)} />
-                <DetailItem label="Updated" value={formatDateTime(task.updatedAt)} />
+                <DetailItem
+                  label="Creator"
+                  value={task.creator.name ?? task.creator.email ?? "Unknown"}
+                />
+                <DetailItem
+                  label="Deadline"
+                  value={formatDateTime(task.deadline)}
+                />
+                <DetailItem
+                  label="Created"
+                  value={formatDateTime(task.createdAt)}
+                />
+                <DetailItem
+                  label="Updated"
+                  value={formatDateTime(task.updatedAt)}
+                />
               </aside>
             </div>
           </section>
         ) : null}
 
-        {taskQuery.isLoading ? <p className="text-sm text-slate-500">Loading task...</p> : null}
+        {taskQuery.isLoading ? (
+          <p className="text-sm text-slate-500">Loading task...</p>
+        ) : null}
       </div>
     </AppLayout>
   );
@@ -222,7 +245,9 @@ export default function TaskDetailPage() {
 function DetailItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {label}
+      </p>
       <p className="mt-1 text-sm font-medium text-slate-800">{value}</p>
     </div>
   );

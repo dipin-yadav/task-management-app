@@ -47,12 +47,16 @@ const dateTimeFormatter = new Intl.DateTimeFormat("en", {
 
 export function formatDate(date: Date | string | null | undefined) {
   if (!date) return "No date";
-  return dateFormatter.format(new Date(date));
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "No date";
+  return dateFormatter.format(parsed);
 }
 
 export function formatDateTime(date: Date | string | null | undefined) {
   if (!date) return "No date";
-  return dateTimeFormatter.format(new Date(date));
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "No date";
+  return dateTimeFormatter.format(parsed);
 }
 
 export function toDateInputValue(date: Date | string | null | undefined) {
@@ -67,7 +71,10 @@ export function fromDateInputValue(value: string) {
   return new Date(value);
 }
 
-export function initialsFor(name: string | null | undefined, email?: string | null) {
+export function initialsFor(
+  name: string | null | undefined,
+  email?: string | null,
+) {
   const fallback = email?.charAt(0) ?? "?";
   if (!name) return fallback.toUpperCase();
 
@@ -81,7 +88,10 @@ export function initialsFor(name: string | null | undefined, email?: string | nu
   return (initials === "" ? fallback : initials).toUpperCase();
 }
 
-export function getErrorMessage(error: unknown, fallback = "Something went wrong") {
+export function getErrorMessage(
+  error: unknown,
+  fallback = "Something went wrong",
+) {
   if (error instanceof Error && error.message) return error.message;
   return fallback;
 }

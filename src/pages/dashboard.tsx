@@ -13,7 +13,9 @@ type DashboardTask = RouterOutputs["dashboard"]["getRecentActivity"][number];
 
 export default function DashboardPage() {
   const statsQuery = api.dashboard.getStats.useQuery();
-  const upcomingQuery = api.dashboard.getUpcomingDeadlines.useQuery({ days: 14 });
+  const upcomingQuery = api.dashboard.getUpcomingDeadlines.useQuery({
+    days: 14,
+  });
   const recentQuery = api.dashboard.getRecentActivity.useQuery({ limit: 8 });
   const myTasksQuery = api.dashboard.getMyTasks.useQuery();
   const projectsQuery = api.project.list.useQuery();
@@ -21,26 +23,47 @@ export default function DashboardPage() {
   const stats = statsQuery.data;
 
   return (
-    <AppLayout title="Dashboard" description="Overview of your projects and tasks">
+    <AppLayout
+      title="Dashboard"
+      description="Overview of your projects and tasks"
+    >
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-sm text-slate-600">Today&apos;s workspace</p>
-            <h2 className="text-2xl font-semibold text-slate-950">Project overview</h2>
+            <h2 className="text-2xl font-semibold text-slate-950">
+              Project overview
+            </h2>
           </div>
           <ButtonLink href="/projects/new">New project</ButtonLink>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <StatCard label="Total tasks" value={stats?.total ?? 0} loading={statsQuery.isLoading} />
-          <StatCard label="To do" value={stats?.todo ?? 0} loading={statsQuery.isLoading} />
+          <StatCard
+            label="Total tasks"
+            value={stats?.total ?? 0}
+            loading={statsQuery.isLoading}
+          />
+          <StatCard
+            label="To do"
+            value={stats?.todo ?? 0}
+            loading={statsQuery.isLoading}
+          />
           <StatCard
             label="In progress"
             value={stats?.inProgress ?? 0}
             loading={statsQuery.isLoading}
           />
-          <StatCard label="In review" value={stats?.inReview ?? 0} loading={statsQuery.isLoading} />
-          <StatCard label="Done" value={stats?.done ?? 0} loading={statsQuery.isLoading} />
+          <StatCard
+            label="In review"
+            value={stats?.inReview ?? 0}
+            loading={statsQuery.isLoading}
+          />
+          <StatCard
+            label="Done"
+            value={stats?.done ?? 0}
+            loading={statsQuery.isLoading}
+          />
         </div>
 
         {projectsQuery.data?.length === 0 ? (
@@ -56,19 +79,32 @@ export default function DashboardPage() {
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-base font-semibold text-slate-950">My tasks</h3>
-                <p className="text-sm text-slate-500">Assigned to you across all projects.</p>
+                <h3 className="text-base font-semibold text-slate-950">
+                  My tasks
+                </h3>
+                <p className="text-sm text-slate-500">
+                  Assigned to you across all projects.
+                </p>
               </div>
-              <Link href="/projects" className="text-sm font-medium text-slate-700 hover:text-slate-950">
+              <Link
+                href="/projects"
+                className="text-sm font-medium text-slate-700 hover:text-slate-950"
+              >
                 View projects
               </Link>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {myTasksQuery.data?.map((task) => (
-                <TaskCard key={task.id} task={task} projectId={task.project.id} />
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  projectId={task.project.id}
+                />
               ))}
             </div>
-            {myTasksQuery.isLoading ? <p className="text-sm text-slate-500">Loading tasks...</p> : null}
+            {myTasksQuery.isLoading ? (
+              <p className="text-sm text-slate-500">Loading tasks...</p>
+            ) : null}
             {myTasksQuery.data?.length === 0 ? (
               <EmptyState
                 title="No assigned tasks"
@@ -97,11 +133,21 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ label, value, loading }: { label: string; value: number; loading: boolean }) {
+function StatCard({
+  label,
+  value,
+  loading,
+}: {
+  label: string;
+  value: number;
+  loading: boolean;
+}) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-2 text-3xl font-semibold text-slate-950">{loading ? "-" : value}</p>
+      <p className="mt-2 text-3xl font-semibold text-slate-950">
+        {loading ? "-" : value}
+      </p>
     </div>
   );
 }
@@ -132,17 +178,29 @@ function TaskListPanel({
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-slate-950">{task.title}</p>
-                <p className="mt-1 truncate text-xs text-slate-500">{task.project.name}</p>
+                <p className="truncate text-sm font-medium text-slate-950">
+                  {task.title}
+                </p>
+                <p className="mt-1 truncate text-xs text-slate-500">
+                  {task.project.name}
+                </p>
               </div>
-              <Badge tone={statusTone[task.status]}>{statusLabels[task.status]}</Badge>
+              <Badge tone={statusTone[task.status]}>
+                {statusLabels[task.status]}
+              </Badge>
             </div>
-            <p className="mt-2 text-xs text-slate-500">Due {formatDate(task.deadline)}</p>
+            {task.deadline ? (
+              <p className="mt-2 text-xs text-slate-500">
+                Due {formatDate(task.deadline)}
+              </p>
+            ) : null}
           </Link>
         ))}
       </div>
       {loading ? <p className="text-sm text-slate-500">Loading...</p> : null}
-      {tasks?.length === 0 ? <p className="text-sm text-slate-500">Nothing to show.</p> : null}
+      {tasks?.length === 0 ? (
+        <p className="text-sm text-slate-500">Nothing to show.</p>
+      ) : null}
     </section>
   );
 }

@@ -22,6 +22,7 @@ export const taskRouter = createTRPCRouter({
         projectId: z.string().cuid(),
         title: z.string().min(1).max(200),
         description: z.string().max(5000).optional(),
+        status: z.nativeEnum(TaskStatus).default("TODO"),
         priority: z.nativeEnum(TaskPriority).default("MEDIUM"),
         deadline: z.date().optional(),
         assigneeId: z.string().cuid().optional(),
@@ -29,24 +30,47 @@ export const taskRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await verifyProjectMembership(ctx.db, input.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.session.user.id,
+      );
 
       if (input.assigneeId) {
-        await verifyProjectMembership(ctx.db, input.projectId, input.assigneeId);
+        await verifyProjectMembership(
+          ctx.db,
+          input.projectId,
+          input.assigneeId,
+        );
+      }
+
+      if (input.tagIds && input.tagIds.length > 0) {
+        const validTagCount = await ctx.db.tag.count({
+          where: { id: { in: input.tagIds }, projectId: input.projectId },
+        });
+
+        if (validTagCount !== input.tagIds.length) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "One or more tags do not belong to this project",
+          });
+        }
       }
 
       return ctx.db.task.create({
         data: {
           title: input.title,
           description: input.description,
+          status: input.status,
           priority: input.priority,
           deadline: input.deadline,
           projectId: input.projectId,
           creatorId: ctx.session.user.id,
           assigneeId: input.assigneeId,
-          ...(input.tagIds && input.tagIds.length > 0 && {
-            tags: { create: input.tagIds.map((tagId) => ({ tagId })) },
-          }),
+          ...(input.tagIds &&
+            input.tagIds.length > 0 && {
+              tags: { create: input.tagIds.map((tagId) => ({ tagId })) },
+            }),
         },
         include: taskInclude,
       });
@@ -64,7 +88,11 @@ export const taskRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      await verifyProjectMembership(ctx.db, input.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        input.projectId,
+        ctx.session.user.id,
+      );
 
       return ctx.db.task.findMany({
         where: {
@@ -72,13 +100,21 @@ export const taskRouter = createTRPCRouter({
           ...(input.status && { status: input.status }),
           ...(input.priority && { priority: input.priority }),
           ...(input.assigneeId && { assigneeId: input.assigneeId }),
-          ...(input.tagIds && input.tagIds.length > 0 && {
-            tags: { some: { tagId: { in: input.tagIds } } },
-          }),
+          ...(input.tagIds &&
+            input.tagIds.length > 0 && {
+              tags: { some: { tagId: { in: input.tagIds } } },
+            }),
           ...(input.search && {
             OR: [
-              { title: { contains: input.search, mode: "insensitive" as const } },
-              { description: { contains: input.search, mode: "insensitive" as const } },
+              {
+                title: { contains: input.search, mode: "insensitive" as const },
+              },
+              {
+                description: {
+                  contains: input.search,
+                  mode: "insensitive" as const,
+                },
+              },
             ],
           }),
         },
@@ -102,7 +138,11 @@ export const taskRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
-      await verifyProjectMembership(ctx.db, task.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        task.projectId,
+        ctx.session.user.id,
+      );
       return task;
     }),
 
@@ -112,6 +152,7 @@ export const taskRouter = createTRPCRouter({
         id: z.string().cuid(),
         title: z.string().min(1).max(200).optional(),
         description: z.string().max(5000).optional(),
+        status: z.nativeEnum(TaskStatus).optional(),
         priority: z.nativeEnum(TaskPriority).optional(),
         deadline: z.date().nullable().optional(),
         assigneeId: z.string().cuid().nullable().optional(),
@@ -124,7 +165,11 @@ export const taskRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
-      await verifyProjectMembership(ctx.db, task.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        task.projectId,
+        ctx.session.user.id,
+      );
 
       if (input.assigneeId) {
         await verifyProjectMembership(ctx.db, task.projectId, input.assigneeId);
@@ -132,6 +177,19 @@ export const taskRouter = createTRPCRouter({
 
       return ctx.db.$transaction(async (tx) => {
         if (input.tagIds !== undefined) {
+          if (input.tagIds.length > 0) {
+            const validTagCount = await tx.tag.count({
+              where: { id: { in: input.tagIds }, projectId: task.projectId },
+            });
+
+            if (validTagCount !== input.tagIds.length) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "One or more tags do not belong to this project",
+              });
+            }
+          }
+
           await tx.taskTag.deleteMany({ where: { taskId: input.id } });
           if (input.tagIds.length > 0) {
             await tx.taskTag.createMany({
@@ -144,10 +202,15 @@ export const taskRouter = createTRPCRouter({
           where: { id: input.id },
           data: {
             ...(input.title !== undefined && { title: input.title }),
-            ...(input.description !== undefined && { description: input.description }),
+            ...(input.description !== undefined && {
+              description: input.description,
+            }),
+            ...(input.status !== undefined && { status: input.status }),
             ...(input.priority !== undefined && { priority: input.priority }),
             ...(input.deadline !== undefined && { deadline: input.deadline }),
-            ...(input.assigneeId !== undefined && { assigneeId: input.assigneeId }),
+            ...(input.assigneeId !== undefined && {
+              assigneeId: input.assigneeId,
+            }),
           },
           include: taskInclude,
         });
@@ -162,22 +225,32 @@ export const taskRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
-      await verifyProjectMembership(ctx.db, task.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        task.projectId,
+        ctx.session.user.id,
+      );
       await ctx.db.task.delete({ where: { id: input.id } });
     }),
 
   assign: protectedProcedure
-    .input(z.object({
-      id: z.string().cuid(),
-      assigneeId: z.string().cuid().nullable(),
-    }))
+    .input(
+      z.object({
+        id: z.string().cuid(),
+        assigneeId: z.string().cuid().nullable(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const task = await ctx.db.task.findUnique({ where: { id: input.id } });
       if (!task) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
-      await verifyProjectMembership(ctx.db, task.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        task.projectId,
+        ctx.session.user.id,
+      );
 
       if (input.assigneeId) {
         await verifyProjectMembership(ctx.db, task.projectId, input.assigneeId);
@@ -191,17 +264,23 @@ export const taskRouter = createTRPCRouter({
     }),
 
   updateStatus: protectedProcedure
-    .input(z.object({
-      id: z.string().cuid(),
-      status: z.nativeEnum(TaskStatus),
-    }))
+    .input(
+      z.object({
+        id: z.string().cuid(),
+        status: z.nativeEnum(TaskStatus),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const task = await ctx.db.task.findUnique({ where: { id: input.id } });
       if (!task) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
-      await verifyProjectMembership(ctx.db, task.projectId, ctx.session.user.id);
+      await verifyProjectMembership(
+        ctx.db,
+        task.projectId,
+        ctx.session.user.id,
+      );
 
       return ctx.db.task.update({
         where: { id: input.id },

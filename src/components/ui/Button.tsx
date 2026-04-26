@@ -54,7 +54,14 @@ export function Button({
 
   return (
     <button
-      className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className)}
+      type="button"
+      aria-busy={isLoading}
+      className={cn(
+        baseClasses,
+        variantClasses[variant],
+        sizeClasses[size],
+        className,
+      )}
       disabled={isDisabled}
       {...props}
     >
@@ -79,7 +86,12 @@ export function ButtonLink({
   return (
     <Link
       href={href}
-      className={cn(baseClasses, variantClasses[variant], sizeClasses[size], className)}
+      className={cn(
+        baseClasses,
+        variantClasses[variant],
+        sizeClasses[size],
+        className,
+      )}
       {...props}
     >
       {children}

@@ -4,7 +4,10 @@ import { useState } from "react";
 
 import { AppLayout } from "~/components/layout/AppLayout";
 import { TaskBoard } from "~/components/tasks/TaskBoard";
-import { TaskFilters, type TaskFilterState } from "~/components/tasks/TaskFilters";
+import {
+  TaskFilters,
+  type TaskFilterState,
+} from "~/components/tasks/TaskFilters";
 import { TaskForm, type TaskFormValues } from "~/components/tasks/TaskForm";
 import { Badge, statusTone } from "~/components/ui/Badge";
 import { Button } from "~/components/ui/Button";
@@ -12,7 +15,11 @@ import { EmptyState } from "~/components/ui/EmptyState";
 import { Modal } from "~/components/ui/Modal";
 import { requireAuth } from "~/server/requireAuth";
 import { api } from "~/utils/api";
-import { getErrorMessage, statusLabels, type TaskStatusValue } from "~/utils/format";
+import {
+  getErrorMessage,
+  statusLabels,
+  type TaskStatusValue,
+} from "~/utils/format";
 
 const initialFilters: TaskFilterState = {
   search: "",
@@ -30,6 +37,7 @@ export default function ProjectDetailPage() {
   const [filters, setFilters] = useState<TaskFilterState>(initialFilters);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [formError, setFormError] = useState("");
+  const [boardMessage, setBoardMessage] = useState("");
 
   const projectQuery = api.project.getById.useQuery(
     { id: projectId },
@@ -71,27 +79,35 @@ export default function ProjectDetailPage() {
   const project = projectQuery.data;
   const tags = tagsQuery.data ?? [];
 
-  const handleStatusChange = (taskId: string, status: TaskStatusValue) => {
-    void updateStatus.mutateAsync({ id: taskId, status });
+  const handleStatusChange = async (
+    taskId: string,
+    status: TaskStatusValue,
+  ) => {
+    setBoardMessage("");
+
+    try {
+      await updateStatus.mutateAsync({ id: taskId, status });
+    } catch (error) {
+      setBoardMessage(
+        `Failed to update task status: ${getErrorMessage(error)}`,
+      );
+    }
   };
 
   const handleCreateTask = async (values: TaskFormValues) => {
     setFormError("");
 
     try {
-      const task = await createTask.mutateAsync({
+      await createTask.mutateAsync({
         projectId,
         title: values.title,
         description: values.description,
+        status: values.status,
         priority: values.priority,
         deadline: values.deadline,
         assigneeId: values.assigneeId,
         tagIds: values.tagIds,
       });
-
-      if (values.status !== "TODO") {
-        await updateStatus.mutateAsync({ id: task.id, status: values.status });
-      }
 
       setTaskModalOpen(false);
     } catch (error) {
@@ -100,16 +116,24 @@ export default function ProjectDetailPage() {
   };
 
   return (
-    <AppLayout title={project?.name ?? "Project"} description="Project task board">
+    <AppLayout
+      title={project?.name ?? "Project"}
+      description="Project task board"
+    >
       <div className="space-y-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <Link href="/projects" className="text-sm font-medium text-slate-500 hover:text-slate-900">
+              <Link
+                href="/projects"
+                className="text-sm font-medium text-slate-500 hover:text-slate-900"
+              >
                 Projects
               </Link>
               <span className="text-sm text-slate-400">/</span>
-              <span className="text-sm text-slate-600">{project?.name ?? "Loading"}</span>
+              <span className="text-sm text-slate-600">
+                {project?.name ?? "Loading"}
+              </span>
             </div>
             <h2 className="truncate text-2xl font-semibold text-slate-950">
               {project?.name ?? "Loading project..."}
@@ -119,7 +143,11 @@ export default function ProjectDetailPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button type="button" variant="secondary" onClick={() => setTaskModalOpen(true)}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setTaskModalOpen(true)}
+            >
               New task
             </Button>
             <Link
@@ -133,7 +161,11 @@ export default function ProjectDetailPage() {
 
         {project ? (
           <div className="grid gap-3 sm:grid-cols-4">
-            <StatusCount label="To do" value={project.taskCounts.TODO} status="TODO" />
+            <StatusCount
+              label="To do"
+              value={project.taskCounts.TODO}
+              status="TODO"
+            />
             <StatusCount
               label="In progress"
               value={project.taskCounts.IN_PROGRESS}
@@ -144,7 +176,11 @@ export default function ProjectDetailPage() {
               value={project.taskCounts.IN_REVIEW}
               status="IN_REVIEW"
             />
-            <StatusCount label="Done" value={project.taskCounts.DONE} status="DONE" />
+            <StatusCount
+              label="Done"
+              value={project.taskCounts.DONE}
+              status="DONE"
+            />
           </div>
         ) : null}
 
@@ -157,9 +193,27 @@ export default function ProjectDetailPage() {
           />
         ) : null}
 
-        {tasksQuery.isLoading ? <p className="text-sm text-slate-500">Loading tasks...</p> : null}
+        {tasksQuery.isLoading ? (
+          <p className="text-sm text-slate-500">Loading tasks...</p>
+        ) : null}
 
-        {tasksQuery.data && tasksQuery.data.length > 0 ? (
+        {boardMessage ? (
+          <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {boardMessage}
+          </div>
+        ) : null}
+
+        {!tasksQuery.isLoading && tasksQuery.isError ? (
+          <EmptyState
+            title="Failed to load tasks"
+            description={tasksQuery.error.message}
+          />
+        ) : null}
+
+        {!tasksQuery.isLoading &&
+        !tasksQuery.isError &&
+        tasksQuery.data &&
+        tasksQuery.data.length > 0 ? (
           <TaskBoard
             tasks={tasksQuery.data}
             projectId={projectId}
@@ -167,7 +221,9 @@ export default function ProjectDetailPage() {
           />
         ) : null}
 
-        {tasksQuery.data?.length === 0 ? (
+        {!tasksQuery.isLoading &&
+        !tasksQuery.isError &&
+        tasksQuery.data?.length === 0 ? (
           <EmptyState
             title="No tasks match this view"
             description="Create a task or adjust the filters to see more work on the board."
