@@ -106,7 +106,7 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 3.24 | All routers merged in `root.ts` | ✅ Done | project, task, tag, auth; postRouter removed |
+| 3.24 | All routers merged in `root.ts` | ✅ Done | project, task, tag, auth, dashboard; postRouter removed |
 
 ---
 
@@ -116,42 +116,42 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 4.1 | `AppLayout` with sidebar navigation exists | ❌ Not Done | |
-| 4.2 | `Sidebar` with project list and quick navigation | ❌ Not Done | |
-| 4.3 | `Header` with user avatar, dropdown, logout | ❌ Not Done | |
+| 4.1 | `AppLayout` with sidebar navigation exists | ✅ Done | `src/components/layout/AppLayout.tsx` wraps protected pages with responsive shell |
+| 4.2 | `Sidebar` with project list and quick navigation | ✅ Done | Sidebar loads project list and links to dashboard, projects, profile, and new project |
+| 4.3 | `Header` with user avatar, dropdown, logout | ✅ Done | Header shows current user identity and sign-out action |
 
 ### Project Pages
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 4.4 | Projects list page (`/projects`) — grid of project cards | ❌ Not Done | |
-| 4.5 | New project page (`/projects/new`) — create form | ❌ Not Done | |
-| 4.6 | Project detail page (`/projects/[id]`) — task board (Kanban) | ❌ Not Done | |
-| 4.7 | Project settings page (`/projects/[id]/settings`) — member management | ❌ Not Done | |
+| 4.4 | Projects list page (`/projects`) — grid of project cards | ✅ Done | Shows project cards with task/member counts and updated date |
+| 4.5 | New project page (`/projects/new`) — create form | ✅ Done | Creates project and redirects to project board |
+| 4.6 | Project detail page (`/projects/[id]`) — task board (Kanban) | ✅ Done | Includes filters, status counts, create-task modal, native drag/drop, and status select fallback |
+| 4.7 | Project settings page (`/projects/[id]/settings`) — member management | ✅ Done | Supports project edit, delete, members, roles, and tag management |
 
 ### Task Components
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 4.8 | `TaskBoard` — Kanban columns (TODO, IN_PROGRESS, IN_REVIEW, DONE) | ❌ Not Done | |
-| 4.9 | `TaskCard` — Summary with title, assignee, priority, tags, deadline | ❌ Not Done | |
-| 4.10 | `TaskForm` — Create/edit form with all fields | ❌ Not Done | |
-| 4.11 | `TaskDetail` — Full detail view page | ❌ Not Done | |
+| 4.8 | `TaskBoard` — Kanban columns (TODO, IN_PROGRESS, IN_REVIEW, DONE) | ✅ Done | Groups tasks by status and updates status via native drag/drop |
+| 4.9 | `TaskCard` — Summary with title, assignee, priority, tags, deadline | ✅ Done | Shows badges, avatar/assignee, deadline, and link to detail page |
+| 4.10 | `TaskForm` — Create/edit form with all fields | ✅ Done | Supports title, description, status, priority, deadline, assignee, and tags |
+| 4.11 | `TaskDetail` — Full detail view page | ✅ Done | `/projects/[id]/tasks/[taskId]` supports view, edit, and delete |
 
 ### Profile Page
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 4.12 | User profile page (`/profile`) — edit name, email, image | ❌ Not Done | |
+| 4.12 | User profile page (`/profile`) — edit name, email, image | ✅ Done | Name and image URL editable; email is read-only |
 
 ### Dashboard (Optional)
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 4.13 | Dashboard page (`/dashboard`) with stats | ❌ Not Done | Optional |
-| 4.14 | Task count by status (stats cards) | ❌ Not Done | Optional |
-| 4.15 | Upcoming deadlines timeline | ❌ Not Done | Optional |
-| 4.16 | Recent activity feed | ❌ Not Done | Optional |
+| 4.13 | Dashboard page (`/dashboard`) with stats | ✅ Done | Full dashboard page implemented and protected |
+| 4.14 | Task count by status (stats cards) | ✅ Done | Backed by `dashboard.getStats` |
+| 4.15 | Upcoming deadlines timeline | ✅ Done | Backed by `dashboard.getUpcomingDeadlines` |
+| 4.16 | Recent activity feed | ✅ Done | Backed by `dashboard.getRecentActivity`; dashboard also shows `dashboard.getMyTasks` |
 
 ---
 
@@ -192,8 +192,8 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 | 7.3 | `README.md` has local development setup instructions | ✅ Done | Updated |
 | 7.4 | `README.md` has environment variables guide | ✅ Done | Updated |
 | 7.5 | `README.md` has deployment instructions | ✅ Done | Updated |
-| 7.6 | ESLint passes with no warnings | ❌ Not Done | |
-| 7.7 | TypeScript strict checks pass | ❌ Not Done | |
+| 7.6 | ESLint passes with no warnings | ✅ Done | Verified with `npm run lint` after Phase 4 implementation |
+| 7.7 | TypeScript strict checks pass | ✅ Done | Verified with `npm run build` and `tsc --noEmit` |
 | 7.8 | No unused code or console.logs | ❌ Not Done | |
 
 ---
@@ -205,8 +205,8 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 | Phase 1: Setup & Foundation | 14 | 13 | 1 |
 | Phase 2: Authentication | 25 | 25 | 0 |
 | Phase 3: Core Features (API) | 24 | 24 | 0 |
-| Phase 4: UI/UX | 16 | 0 | 16 |
+| Phase 4: UI/UX | 16 | 16 | 0 |
 | Phase 5: Unit Tests | 10 | 0 | 10 |
 | Phase 6: Deployment | 4 | 0 | 4 |
-| Phase 7: Documentation | 8 | 5 | 3 |
-| **Total** | **101** | **67** | **34** |
+| Phase 7: Documentation | 8 | 7 | 1 |
+| **Total** | **101** | **85** | **16** |
