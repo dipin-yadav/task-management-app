@@ -245,4 +245,31 @@ describe("project router", () => {
     });
     expect(result).toBe(member);
   });
+
+  it("throws a NOT_FOUND error when adding a member with a non-existent email", async () => {
+    const db = createMockDb();
+    const caller = createMockCaller(db);
+    db.projectMember.findUnique.mockResolvedValue({
+      projectId: TEST_PROJECT_ID,
+      userId: TEST_USER_ID,
+      role: "OWNER",
+    });
+    db.user.findUnique.mockResolvedValue(null);
+
+    await expect(
+      caller.project.addMember({
+        projectId: TEST_PROJECT_ID,
+        email: "does-not-exist@example.com",
+        role: "MEMBER",
+      }),
+    ).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      message: "No user found with that email address",
+    });
+
+    expect(db.user.findUnique).toHaveBeenCalledWith({
+      where: { email: "does-not-exist@example.com" },
+    });
+    expect(db.projectMember.create).not.toHaveBeenCalled();
+  });
 });

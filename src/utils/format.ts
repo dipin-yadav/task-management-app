@@ -75,7 +75,7 @@ export function initialsFor(
   name: string | null | undefined,
   email?: string | null,
 ) {
-  const fallback = email?.charAt(0) ?? "?";
+  const fallback = email ? email.charAt(0) : "?";
   if (!name) return fallback.toUpperCase();
 
   const initials = name
