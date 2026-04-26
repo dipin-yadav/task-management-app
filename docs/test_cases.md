@@ -63,50 +63,50 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 3.1 | `project.create` — Creates project, caller added as OWNER | ❌ Not Done | Router not yet created |
-| 3.2 | `project.list` — Returns all projects user is a member of | ❌ Not Done | |
-| 3.3 | `project.getById` — Returns project details with members | ❌ Not Done | |
-| 3.4 | `project.update` — Only OWNER/ADMIN can update | ❌ Not Done | |
-| 3.5 | `project.delete` — Only OWNER can delete (cascade) | ❌ Not Done | |
-| 3.6 | `project.addMember` — Adds user by email | ❌ Not Done | |
-| 3.7 | `project.removeMember` — Cannot remove OWNER | ❌ Not Done | |
-| 3.8 | `project.updateMemberRole` — Only OWNER can change roles | ❌ Not Done | |
+| 3.1 | `project.create` — Creates project, caller added as OWNER | ✅ Done | Auto-creates ProjectMember with OWNER role |
+| 3.2 | `project.list` — Returns all projects user is a member of | ✅ Done | Includes member/task count, ordered by updatedAt |
+| 3.3 | `project.getById` — Returns project details with members | ✅ Done | Includes members with user info + task counts by status |
+| 3.4 | `project.update` — Only OWNER/ADMIN can update | ✅ Done | `verifyProjectMembership` with role check |
+| 3.5 | `project.delete` — Only OWNER can delete (cascade) | ✅ Done | OWNER-only, Prisma cascade handles cleanup |
+| 3.6 | `project.addMember` — Adds user by email | ✅ Done | OWNER/ADMIN, checks duplicate + user exists |
+| 3.7 | `project.removeMember` — Cannot remove OWNER | ✅ Done | Explicit OWNER role guard |
+| 3.8 | `project.updateMemberRole` — Only OWNER can change roles | ✅ Done | Cannot change own role |
 
 ### Task Router
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 3.9 | `task.create` — Creates task within project (must be member) | ❌ Not Done | Router not yet created |
-| 3.10 | `task.list` — Lists tasks with filters (status, priority, assignee, tags) | ❌ Not Done | |
-| 3.11 | `task.getById` — Returns task with tags, assignee, creator | ❌ Not Done | |
-| 3.12 | `task.update` — Updates task fields | ❌ Not Done | |
-| 3.13 | `task.delete` — Deletes task | ❌ Not Done | |
-| 3.14 | `task.assign` — Assigns task to project member | ❌ Not Done | |
-| 3.15 | `task.updateStatus` — Quick status change | ❌ Not Done | |
+| 3.9 | `task.create` — Creates task within project (must be member) | ✅ Done | Validates assignee membership, connects tags |
+| 3.10 | `task.list` — Lists tasks with filters (status, priority, assignee, tags) | ✅ Done | Plus case-insensitive search on title/description |
+| 3.11 | `task.getById` — Returns task with tags, assignee, creator | ✅ Done | Includes project name |
+| 3.12 | `task.update` — Updates task fields | ✅ Done | Tag sync via delete-all + recreate in transaction |
+| 3.13 | `task.delete` — Deletes task | ✅ Done | Membership verified |
+| 3.14 | `task.assign` — Assigns task to project member | ✅ Done | Validates assignee is project member |
+| 3.15 | `task.updateStatus` — Quick status change | ✅ Done | For Kanban drag-and-drop |
 
 ### Tag Router
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 3.16 | `tag.create` — Creates tag in project | ❌ Not Done | Router not yet created |
-| 3.17 | `tag.list` — Lists tags for a project | ❌ Not Done | |
-| 3.18 | `tag.update` — Updates tag name/color | ❌ Not Done | |
-| 3.19 | `tag.delete` — Deletes tag | ❌ Not Done | |
-| 3.20 | `tag.addToTask` — Associates tag with task | ❌ Not Done | |
-| 3.21 | `tag.removeFromTask` — Removes tag from task | ❌ Not Done | |
+| 3.16 | `tag.create` — Creates tag in project | ✅ Done | Unique name per project enforced |
+| 3.17 | `tag.list` — Lists tags for a project | ✅ Done | Includes task usage count |
+| 3.18 | `tag.update` — Updates tag name/color | ✅ Done | Uniqueness check on rename |
+| 3.19 | `tag.delete` — Deletes tag | ✅ Done | Cascade removes TaskTag |
+| 3.20 | `tag.addToTask` — Associates tag with task | ✅ Done | Validates tag belongs to same project |
+| 3.21 | `tag.removeFromTask` — Removes tag from task | ✅ Done | Membership verified |
 
 ### Auth Router (tRPC)
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 3.22 | `auth.getProfile` — Returns current user profile | ❌ Not Done | Router not yet created |
-| 3.23 | `auth.updateProfile` — Updates name, image | ❌ Not Done | |
+| 3.22 | `auth.getProfile` — Returns current user profile | ✅ Done | Excludes password field via select |
+| 3.23 | `auth.updateProfile` — Updates name, image | ✅ Done | Partial update supported |
 
 ### Root Router
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 3.24 | All routers merged in `root.ts` | ❌ Not Done | Currently only has boilerplate `postRouter` |
+| 3.24 | All routers merged in `root.ts` | ✅ Done | project, task, tag, auth; postRouter removed |
 
 ---
 
@@ -204,9 +204,9 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 |-------|-------|------|-----------|
 | Phase 1: Setup & Foundation | 14 | 13 | 1 |
 | Phase 2: Authentication | 25 | 25 | 0 |
-| Phase 3: Core Features (API) | 24 | 0 | 24 |
+| Phase 3: Core Features (API) | 24 | 24 | 0 |
 | Phase 4: UI/UX | 16 | 0 | 16 |
 | Phase 5: Unit Tests | 10 | 0 | 10 |
 | Phase 6: Deployment | 4 | 0 | 4 |
 | Phase 7: Documentation | 8 | 5 | 3 |
-| **Total** | **101** | **43** | **58** |
+| **Total** | **101** | **67** | **34** |
