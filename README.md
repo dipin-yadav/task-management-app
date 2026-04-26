@@ -7,11 +7,10 @@ A premium, serverless Task Management application built with the **T3 Stack**. T
 - **Framework**: [Next.js](https://nextjs.org) (Pages Router)
 - **Language**: [TypeScript](https://www.typescriptlang.org)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com)
-- **Authentication**: [NextAuth.js](https://next-auth.js.org)
+- **Authentication**: [NextAuth.js](https://next-auth.js.org) (Credentials provider — email/password)
 - **Database ORM**: [Prisma](https://prisma.io)
 - **API**: [tRPC](https://trpc.io)
-- **Database**: [PostgreSQL](https://www.postgresql.org) (Local / Supabase)
-- **Infrastructure**: [SST (Serverless Stack)](https://sst.dev) for AWS deployment
+- **Database**: [PostgreSQL](https://www.postgresql.org) (Locally installed)
 
 ## 🛠️ Local Setup
 
@@ -43,10 +42,6 @@ DIRECT_URL="postgresql://postgres:password@localhost:5432/task-management-app"
 # Next Auth
 NEXTAUTH_SECRET="your-secret-here" # Generate with: openssl rand -base64 32
 NEXTAUTH_URL="http://localhost:3000"
-
-# Optional: Discord Auth
-# DISCORD_CLIENT_ID=""
-# DISCORD_CLIENT_SECRET=""
 ```
 
 ### 3. Start Database
@@ -76,22 +71,40 @@ The app will be available at [http://localhost:3000](http://localhost:3000).
 
 ## 📂 Project Structure
 
-- `docs/`: Comprehensive project documentation (Architecture, Schema, Setup).
-- `prisma/`: Database schema and migration history.
-- `src/components/`: Reusable React components.
-- `src/pages/`: Next.js pages and API routes.
-- `src/server/`: Backend logic (tRPC routers, auth configuration, database client).
-- `sst.config.ts`: Infrastructure-as-code for AWS deployment.
+- `docs/` — Project documentation (architecture, schema, API reference, setup guide)
+- `prisma/` — Database schema and migration history
+- `src/pages/` — Next.js pages and API routes
+- `src/pages/auth/` — Sign-in and sign-up pages
+- `src/server/api/routers/` — tRPC routers (project, task, tag, auth)
+- `src/server/auth.ts` — NextAuth.js configuration (Credentials provider)
+- `src/server/db.ts` — Prisma client singleton
+
+## 🔌 API Overview (tRPC)
+
+All API endpoints are type-safe tRPC procedures. See `docs/api-reference.md` for full details.
+
+| Router | Procedures | Description |
+|--------|-----------|-------------|
+| `project` | 8 | CRUD + member management with role-based auth (OWNER/ADMIN/MEMBER) |
+| `task` | 7 | CRUD + assign + status update + filtering/search |
+| `tag` | 6 | CRUD + task association |
+| `auth` | 2 | Profile get/update |
+
+## 📊 Progress
+
+| Phase | Status |
+|-------|--------|
+| Phase 1: Setup & Foundation | ✅ Done |
+| Phase 2: Authentication | ✅ Done |
+| Phase 3: Core Features (API) | ✅ Done |
+| Phase 4: UI/UX | 🔲 Not started |
+| Phase 5: Unit Tests | 🔲 Not started |
+| Phase 6: Deployment | 🔲 Not started |
+| Phase 7: Documentation & Polish | 🔲 In progress |
 
 ## ☁️ Deployment
 
-This project is designed to be deployed on **AWS** using **SST**.
-
-1. Configure AWS CLI with your credentials.
-2. Update the `DATABASE_URL` to point to your **Supabase** instance.
-3. Run `npx sst deploy --stage production`.
-
-Refer to `docs/setup-guide.md` for detailed deployment instructions.
+Deployment to AWS via SST is planned for a later phase. The app currently runs locally with a locally installed PostgreSQL instance.
 
 ---
 
