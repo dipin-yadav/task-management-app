@@ -1,13 +1,9 @@
 import { type NextApiRequest, type NextApiResponse } from "next";
-import bcrypt from "bcryptjs";
+
+import { hashPassword } from "~/server/auth/password";
+import { signupSchema } from "~/server/auth/signup";
 import { db } from "~/server/db";
 import { z } from "zod";
-
-const signupSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
 
 export default async function handler(
   req: NextApiRequest,
@@ -30,7 +26,7 @@ export default async function handler(
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(body.password, 12);
+    const hashedPassword = await hashPassword(body.password);
 
     // Create user
     const user = await db.user.create({

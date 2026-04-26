@@ -159,16 +159,16 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 5.1 | Test framework (Vitest) installed and configured | ❌ Not Done | |
-| 5.2 | Test: Password hashing produces valid bcrypt hash | ❌ Not Done | |
-| 5.3 | Test: Password comparison succeeds with correct password | ❌ Not Done | |
-| 5.4 | Test: Password comparison fails with wrong password | ❌ Not Done | |
-| 5.5 | Test: Signup validation rejects invalid email | ❌ Not Done | |
-| 5.6 | Test: Signup validation rejects short password (< 6 chars) | ❌ Not Done | |
-| 5.7 | Test: Signup validation accepts valid input | ❌ Not Done | |
-| 5.8 | Test: Task CRUD operations work correctly | ❌ Not Done | |
-| 5.9 | Test: Project CRUD operations work correctly | ❌ Not Done | |
-| 5.10 | Test: Non-member cannot access project tasks | ❌ Not Done | |
+| 5.1 | Test framework (Vitest) installed and configured | ✅ Done | `vitest.config.ts`, `src/test/setup.ts`, and npm `test` scripts added |
+| 5.2 | Test: Password hashing produces valid bcrypt hash | ✅ Done | `src/server/auth/password.test.ts` verifies bcrypt hash format and comparison |
+| 5.3 | Test: Password comparison succeeds with correct password | ✅ Done | Covered by `verifyPassword()` unit test |
+| 5.4 | Test: Password comparison fails with wrong password | ✅ Done | Covered by `verifyPassword()` unit test |
+| 5.5 | Test: Signup validation rejects invalid email | ✅ Done | `src/server/auth/signup.test.ts` covers invalid email validation |
+| 5.6 | Test: Signup validation rejects short password (< 6 chars) | ✅ Done | `src/server/auth/signup.test.ts` covers password minimum length |
+| 5.7 | Test: Signup validation accepts valid input | ✅ Done | `src/server/auth/signup.test.ts` covers valid payload parsing |
+| 5.8 | Test: Task CRUD operations work correctly | ✅ Done | `src/server/api/routers/task.test.ts` covers create, list, update, delete |
+| 5.9 | Test: Project CRUD operations work correctly | ✅ Done | `src/server/api/routers/project.test.ts` covers create, list, update, delete |
+| 5.10 | Test: Non-member cannot access project tasks | ✅ Done | `src/server/api/routers/task.test.ts` verifies FORBIDDEN for non-member task list access |
 
 ---
 
@@ -206,7 +206,7 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 | Phase 2: Authentication | 25 | 25 | 0 |
 | Phase 3: Core Features (API) | 24 | 24 | 0 |
 | Phase 4: UI/UX | 16 | 16 | 0 |
-| Phase 5: Unit Tests | 10 | 0 | 10 |
+| Phase 5: Unit Tests | 10 | 10 | 0 |
 | Phase 6: Deployment | 4 | 0 | 4 |
 | Phase 7: Documentation | 8 | 7 | 1 |
-| **Total** | **101** | **85** | **16** |
+| **Total** | **101** | **95** | **6** |

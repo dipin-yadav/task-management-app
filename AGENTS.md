@@ -268,6 +268,8 @@ Available scripts:
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
 | `npm run lint` | ESLint |
+| `npm run test` | Run Vitest test suite once |
+| `npm run test:watch` | Run Vitest in watch mode |
 | `npm run db:generate` | Prisma migrate dev |
 | `npm run db:migrate` | Prisma migrate deploy |
 | `npm run db:push` | Prisma db push |
@@ -324,7 +326,7 @@ Available scripts:
 | 2 | Authentication | Complete |
 | 3 | Core Features API | Complete |
 | 4 | UI/UX Implementation | Complete |
-| 5 | Testing | Not started |
+| 5 | Testing | Complete |
 | 6 | Deployment with SST/AWS | Not started |
 | 7 | Documentation & Polish | In progress |
 
@@ -338,11 +340,12 @@ Available scripts:
 - Task CRUD, filtering, assignment, status updates, and Kanban UI
 - Tag CRUD and task tag selection
 - Dashboard, profile, and project/task UI pages
+- Vitest unit tests for password helpers, signup validation, project router CRUD, task router CRUD, and non-member authorization
 - `npm run lint` and `npm run build` verified after Phase 4
+- `npm run test`, `npm run lint`, and `npm run build` verified after Phase 5
 
 ### Remaining
 
-- Unit/integration test setup and test coverage
 - SST deployment configuration and AWS deployment
 - Final documentation polish and end-to-end manual QA
 
