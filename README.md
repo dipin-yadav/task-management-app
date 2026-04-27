@@ -78,18 +78,40 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Scripts
+## Commands Reference
+
+Here are all the `npm`, `npx`, and script commands needed to develop, test, and deploy this project.
+
+### npm Scripts
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start Next.js dev server |
-| `npm run build` | Build production app |
+| `npm install` | Install all dependencies |
+| `npm run dev` | Start Next.js development server |
+| `npm run build` | Build production application |
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
+| `npm run test` | Run Vitest unit tests once |
+| `npm run test:watch` | Run Vitest unit tests in watch mode |
 | `npm run db:generate` | Run Prisma migrate dev |
 | `npm run db:migrate` | Deploy Prisma migrations |
 | `npm run db:push` | Push Prisma schema without migration |
 | `npm run db:studio` | Open Prisma Studio |
+
+### npx Commands
+
+| Command | Description |
+|---|---|
+| `npx prisma generate` | Generate Prisma Client (runs automatically on postinstall) |
+| `npx sst deploy --stage production` | Deploy the application to AWS using SST |
+| `npx sst remove --stage production` | Remove the deployed application from AWS |
+| `npx sst secret set <key> "<value>" --stage production` | Set SST secrets for the production environment |
+
+### Bash Commands
+
+| Command | Description |
+|---|---|
+| `./start-database.sh` | Start local PostgreSQL using Docker |
 
 ## Project Structure
 
@@ -146,11 +168,11 @@ All application APIs are type-safe tRPC procedures except sign-up, which is a RE
 | Phase 4: UI/UX Implementation | Complete |
 | Phase 5: Unit Tests | Complete |
 | Phase 6: Deployment | Complete |
-| Phase 7: Documentation & Polish | In progress |
+| Phase 7: Documentation & Polish | Complete |
 
 ## Verification
 
-The current Phase 4 implementation has been verified with:
+The final implementation has been verified with:
 
 ```bash
 npm run lint

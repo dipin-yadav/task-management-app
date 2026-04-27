@@ -328,7 +328,7 @@ Available scripts:
 | 4 | UI/UX Implementation | Complete |
 | 5 | Testing | Complete |
 | 6 | Deployment with SST/AWS | Complete |
-| 7 | Documentation & Polish | In progress |
+| 7 | Documentation & Polish | Complete |
 
 ### Built
 
@@ -344,10 +344,11 @@ Available scripts:
 - `npm run lint` and `npm run build` verified after Phase 4
 - `npm run test`, `npm run lint`, and `npm run build` verified after Phase 5
 - SST v3 initialized and deployed to AWS
+- Final documentation, testing, and polish completed
 
 ### Remaining
 
-- Final documentation polish and end-to-end manual QA
+- None. The project is fully complete.
 
 ## 12. Common Gotchas
 
@@ -361,3 +362,14 @@ Available scripts:
 8. tRPC uses SuperJSON on both client and server.
 9. Production Supabase should use pooled `DATABASE_URL` for runtime and direct `DIRECT_URL` for migrations.
 10. Phase 4 intentionally added no new npm dependencies.
+
+## 13. AI Agent Workflow Instructions
+
+If you are an AI coding agent working in this repository, follow this workflow:
+
+1. **Verify Your Changes:** Before concluding your turn, run `npm run lint`, `npm run build`, and `npm run test` to ensure your code changes did not introduce regressions.
+2. **Database Schema Changes:** If you modify `prisma/schema.prisma`, immediately run `npx prisma format` and `npx prisma generate` to keep the client types up-to-date. Create migrations via `npx prisma migrate dev --name <description>`.
+3. **Styling:** Rely solely on Tailwind CSS utility classes. Do not introduce custom CSS in `globals.css` unless defining new theme tokens or global base resets.
+4. **Component Generation:** Use functional React components with strict TypeScript interfaces. Destructure props and leverage the `cn()` utility (`src/utils/cn.ts`) for merging Tailwind classes.
+5. **API Integration:** For new frontend data fetching or mutations, always use the strongly-typed `api` object from `~/utils/api`. Do not write raw `fetch` calls.
+6. **Tool Usage:** Prefer file edits using targeted replace tools rather than full file rewrites. Do not write untested logic for complex data transformations.
