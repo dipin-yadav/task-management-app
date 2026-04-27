@@ -48,3 +48,6 @@ yarn-error.log*
 # SST Serverless
 .sst/
 .open-next/
+
+# KIRO IDE
+.kiro

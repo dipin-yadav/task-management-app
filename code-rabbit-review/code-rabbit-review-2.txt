@@ -1,0 +1,638 @@
+Starting CodeRabbit review in plain text mode...
+
+Review directory: /home/dipin/task-management-app
+
+Connecting to review service
+Setting up
+Summarizing
+Reviewing
+
+============================================================================
+File: src/components/ui/Modal.tsx
+Line: 37 to 66
+Type: potential_issue
+
+Comment:
+Missing focus trap – keyboard users can tab outside the modal.
+
+A modal with aria-modal="true" should trap focus within it. Currently, users can Tab to elements behind the overlay, which breaks the accessibility contract. Consider using a focus-trapping library (e.g., focus-trap-react, @radix-ui/react-dialog) or implementing a custom trap.
+
+
+
+
+focus-trap-react npm latest version
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/components/ui/Modal.tsx around lines 37 - 66, The modal currently lacks a focus trap so keyboard users can tab out; update the Modal component to trap focus while open by integrating a focus-trapping solution (e.g., wrap the dialog markup in FocusTrap from focus-trap-react or use Radix Dialog) and configure it to set initial focus to the modal (or a close button), restore focus on deactivate, and prevent tabbing outside; ensure the FocusTrap is activated/deactivated based on the modal being rendered and that existing callbacks like onClose are preserved (target identifiers: the Modal component render, the close Button onClose handler, and titleId).
+
+============================================================================
+File: src/server/api/routers/auth.ts
+Line: 47 to 64
+Type: potential_issue
+
+Comment:
+Handle user-not-found and guard against empty updates.
+
+Two potential issues:
+
+1. Unlike getProfile, this procedure doesn't handle the case where the user record is missing. Prisma's update will throw a P2025 error, which surfaces as an unhandled internal error rather than a clean NOT_FOUND response.
+
+2. If both name and image are undefined, the update proceeds with an empty data object, causing an unnecessary database write.
+
+
+
+🛡️ Proposed fix
+
+     .mutation(async ({ ctx, input }) => {
++      // Guard against empty updates
++      if (input.name === undefined && input.image === undefined) {
++        throw new TRPCError({
++          code: "BAD_REQUEST",
++          message: "At least one field must be provided",
++        });
++      }
++
+-      const updated = await ctx.db.user.update({
+-        where: { id: ctx.session.user.id },
+-        data: {
+-          ...(input.name !== undefined && { name: input.name }),
+-          ...(input.image !== undefined && { image: input.image }),
+-        },
+-        select: {
+-          id: true,
+-          name: true,
+-          email: true,
+-          image: true,
+-          createdAt: true,
+-          updatedAt: true,
+-        },
+-      });
++      try {
++        const updated = await ctx.db.user.update({
++          where: { id: ctx.session.user.id },
++          data: {
++            ...(input.name !== undefined && { name: input.name }),
++            ...(input.image !== undefined && { image: input.image }),
++          },
++          select: {
++            id: true,
++            name: true,
++            email: true,
++            image: true,
++            createdAt: true,
++            updatedAt: true,
++          },
++        });
+
+-      return updated;
++        return updated;
++      } catch (error) {
++        if (
++          error instanceof Error &&
++          "code" in error &&
++          error.code === "P2025"
++        ) {
++          throw new TRPCError({
++            code: "NOT_FOUND",
++            message: "User not found",
++          });
++        }
++        throw error;
++      }
+     }),
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/auth.ts around lines 47 - 64, The mutation currently calls ctx.db.user.update directly which will throw Prisma P2025 if the user is missing and also performs a no-op update when both input.name and input.image are undefined; to fix, first guard against empty updates by returning the existing user (or throw a TRPCError('BAD_REQUEST')) if neither input.name nor input.image is provided, and wrap the ctx.db.user.update call in a try/catch to catch Prisma.PrismaClientKnownRequestError with code 'P2025' and rethrow a TRPCError with code 'NOT_FOUND'; locate the .mutation block that calls ctx.db.user.update and implement these checks and error mapping there.
+
+============================================================================
+File: src/components/ui/Button.tsx
+Line: 78 to 85
+Type: potential_issue
+
+Comment:
+isLoading leaks to the DOM as an invalid attribute.
+
+ButtonLinkProps includes isLoading from BaseButtonProps, but it's not destructured here. It will be spread via ...props to the Link component and ultimately to the anchor element, causing a React warning about an unknown DOM property.
+
+Destructure isLoading to prevent it from reaching the DOM, even if the loading behavior isn't implemented for links.
+
+
+
+
+🐛 Proposed fix
+
+ export function ButtonLink({
+   href,
+   variant = "primary",
+   size = "md",
+   className,
+   children,
++  isLoading: _isLoading,
+   ...props
+ }: ButtonLinkProps) {
+
+
+Alternatively, if ButtonLink shouldn't accept isLoading at all, consider using Omit in the type definition.
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/components/ui/Button.tsx around lines 78 - 85, ButtonLink is passing unknown props through ...props (from ButtonLinkProps which extends BaseButtonProps) so the isLoading prop leaks to the DOM; update the ButtonLink signature to destructure isLoading (e.g. { href, variant = "primary", size = "md", className, children, isLoading, ...props }) so isLoading is removed from the spread before passing props to the Link/anchor, or alternatively change ButtonLinkProps to exclude isLoading (use Omit) if links should never accept it.
+
+============================================================================
+File: src/components/tasks/TaskCard.tsx
+Line: 54 to 57
+Type: potential_issue
+
+Comment:
+Consider keyboard accessibility for draggable functionality.
+
+Native drag-and-drop via draggable is not keyboard-accessible. Keyboard-only users cannot initiate a drag operation without additional handlers (e.g., onKeyDown with arrow keys and Enter/Space to move).
+
+This is mitigated by the status dropdown (lines 97-111) providing an alternative way to change task status. If drag-and-drop is only used for status changes, this is acceptable. However, if it's intended for reordering within a column or cross-column moves beyond status, consider adding keyboard handlers or ARIA live regions to announce drag state.
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/components/tasks/TaskCard.tsx around lines 54 - 57, TaskCard currently uses native draggable and onDragStart (prop draggable and onDragStart?.(task.id)) which is not keyboard-accessible; add keyboard accessibility by implementing an onKeyDown handler on the article that allows keyboard users to initiate and complete moves (e.g., Enter/Space to pick up/drop, Arrow keys to navigate target column/position), tie those actions to the same handlers that update order/status (reuse the existing onDragStart/onDrop logic or call the same update functions), and add ARIA attributes (aria-grabbed/aria-dropeffect or role="button"/aria-pressed and live announcements) so screen reader users receive state changes; keep the existing status dropdown (status change UI) as an alternative but ensure TaskCard (component) exposes keyboard handlers and ARIA for reordering/moving.
+
+============================================================================
+File: src/utils/cn.ts
+Line: 1 to 3
+Type: refactor_suggestion
+
+Comment:
+Consider using an established library instead of a custom implementation.
+
+This utility reimplements functionality already provided by well-tested libraries like clsx or classnames. These libraries offer additional features such as nested array flattening, conditional object syntax, and better edge-case handling. Based on learnings, shared components should be preferred before adding new local UI patterns.
+
+
+
+
+📦 Example using clsx
+
+First, install the library:
+npm install clsx
+
+
+Then replace this file with an import:
+-export function cn(...classes: Array) {
+-  return classes.filter(Boolean).join(" ");
+-}
++export { clsx as cn } from 'clsx';
+
+
+Or if you need to re-export with custom behavior later:
+import { clsx } from 'clsx';
+
+export function cn(...classes: Parameters) {
+  return clsx(...classes);
+}
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/utils/cn.ts around lines 1 - 3, Replace the handcrafted cn function with the well-tested clsx implementation: install the clsx package, import clsx from 'clsx', and re-export a cn wrapper that delegates to clsx (use the Parameters signature if preserving typing) so you get nested-array/object support and better edge-case handling while keeping the cn name as the public API.
+
+============================================================================
+File: src/utils/format.ts
+Line: 62 to 67
+Type: potential_issue
+
+Comment:
+Missing invalid-date check will throw at runtime.
+
+Unlike formatDate and formatDateTime, this function doesn't guard against invalid date strings. Calling toISOString() on an invalid Date throws a RangeError.
+
+
+🐛 Proposed fix
+
+ export function toDateInputValue(date: Date | string | null | undefined) {
+   if (!date) return "";
+   const parsed = new Date(date);
++  if (Number.isNaN(parsed.getTime())) return "";
+   const offsetMs = parsed.getTimezoneOffset()  60  1000;
+   return new Date(parsed.getTime() - offsetMs).toISOString().slice(0, 16);
+ }
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/utils/format.ts around lines 62 - 67, The toDateInputValue function lacks validation for invalid Date objects and will throw when calling toISOString on an invalid date; update toDateInputValue to parse the input into a Date (as currently done), then check for invalidity using isNaN(parsed.getTime()) (or Number.isNaN) and return an empty string (or a safe default) when invalid before computing offset and calling toISOString; keep the existing behavior for valid dates and reference the toDateInputValue function when making the change.
+
+============================================================================
+File: src/server/api/routers/task.ts
+Line: 6
+Type: refactor_suggestion
+
+Comment:
+Use path alias instead of relative import.
+
+As per coding guidelines, imports from src/ should use the ~/ path alias.
+
+
+Suggested fix
+
+-import { verifyProjectMembership } from "./project";
++import { verifyProjectMembership } from "~/server/api/routers/project";
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/task.ts at line 6, Replace the relative import of verifyProjectMembership with the project module path alias: change the import statement that currently reads import { verifyProjectMembership } from "./project"; to use the ~ alias (e.g., import { verifyProjectMembership } from "~/server/api/routers/project";) so it follows the codebase guideline of importing src/ via the ~/ path alias.
+
+============================================================================
+File: src/pages/projects/[id]/index.tsx
+Line: 246
+Type: potential_issue
+
+Comment:
+updateStatus.isPending shouldn't affect the create task form.
+
+The isSubmitting prop includes updateStatus.isPending, which will disable the "Create task" button when a status update is in progress on the board. These are independent operations—the create form should only be blocked by createTask.isPending.
+
+
+🐛 Proposed fix
+
+-            isSubmitting={createTask.isPending || updateStatus.isPending}
++            isSubmitting={createTask.isPending}
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/projects/[id]/index.tsx at line 246, The isSubmitting prop for the create-task form is incorrectly tied to updateStatus.isPending; remove the dependency on updateStatus.isPending and set isSubmitting to only use createTask.isPending so status updates don’t disable the create button (update the JSX that currently reads "isSubmitting={createTask.isPending || updateStatus.isPending}" to "isSubmitting={createTask.isPending}").
+
+============================================================================
+File: src/components/ui/Modal.tsx
+Line: 39 to 43
+Type: potential_issue
+
+Comment:
+Add aria-describedby when description is provided.
+
+The description prop is rendered visually but not linked to the dialog for assistive technologies.
+
+
+
+
+🛠️ Proposed fix
+
+ export function Modal({
+   open,
+   title,
+   description,
+   children,
+   onClose,
+ }: ModalProps) {
+   const titleId = useId();
++  const descriptionId = useId();
+
+
+
+
+
+             {description ? (
+-              {description}
++              {description}
+             ) : null}
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/components/ui/Modal.tsx around lines 39 - 43, The Modal component renders a visual description but doesn't expose it to assistive tech; update the Modal (component rendering the dialog with role="dialog" and aria-labelledby={titleId}) to conditionally add aria-describedby when a description prop exists: give the description element a stable id (e.g., descriptionId) and set aria-describedby={descriptionId} on the dialog when description is provided, ensuring you generate/compose the id consistently alongside titleId and render the description element with that id.
+
+============================================================================
+File: src/pages/projects/index.tsx
+Line: 24 to 33
+Type: potential_issue
+
+Comment:
+Missing error state handling.
+
+The component handles loading and empty states but not the error case. If api.project.list.useQuery() fails, isLoading is false and data is undefined, so users see a blank page with no feedback.
+
+
+
+
+🛡️ Proposed fix to add error handling
+
+         {projectsQuery.isLoading ? Loading projects... : null}
+
++        {projectsQuery.isError ? (
++
++            Failed to load projects. Please try again later.
++
++        ) : null}
++
+         {projectsQuery.data?.length === 0 ? (
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/projects/index.tsx around lines 24 - 33, Add explicit error-state rendering for the projectsQuery returned by api.project.list.useQuery(): check projectsQuery.isError (or projectsQuery.error) and render a visible error UI (e.g., an error paragraph or an ErrorState component) that displays a user-friendly message and the error details (projectsQuery.error?.message) and includes a retry action if appropriate; update the JSX near the existing loading/empty checks (where projectsQuery.isLoading and projectsQuery.data are handled) to return this error UI when isError is true so users see feedback instead of a blank page.
+
+============================================================================
+File: src/components/layout/Sidebar.tsx
+Line: 92 to 120
+Type: potential_issue
+
+Comment:
+Add error state handling for the projects query.
+
+The query handles loading and empty states but doesn't handle error states. If api.project.list.useQuery() fails, users see no feedback.
+
+
+
+
+🛡️ Proposed fix to add error handling
+
+
+               {projectsQuery.isLoading ? (
+                 Loading projects...
+               ) : null}
++              {projectsQuery.isError ? (
++                Failed to load projects
++              ) : null}
+               {projectsQuery.data?.slice(0, 10).map((project) => {
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/components/layout/Sidebar.tsx around lines 92 - 120, The projects list in Sidebar handles loading and empty states but not errors; update the rendering around projectsQuery (from api.project.list.useQuery()) to check projectsQuery.isError and display a concise error message (e.g., "Failed to load projects") inside the same container as the other states, and offer a retry action that calls projectsQuery.refetch; modify the JSX in Sidebar (where projectsQuery.data/.isLoading are used) to render the error UI tied to projectsQuery.error and ensure existing props like onClose, router, and cn usage remain unchanged.
+
+============================================================================
+File: src/server/api/routers/project.ts
+Line: 264 to 269
+Type: potential_issue
+
+Comment:
+Minor: Email enumeration risk.
+
+Returning NOT_FOUND when an email isn't registered allows attackers to enumerate valid user emails. For most internal apps this is acceptable, but for public-facing apps consider a generic error message like "Unable to add member" that doesn't reveal whether the email exists.
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/project.ts around lines 264 - 269, The current check that throws a TRPCError when userToAdd is falsy leaks whether an email is registered; update the throw in the userToAdd branch in project.ts to use a non-revealing, generic error message (e.g., "Unable to add member") instead of "No user found with that email address" and return a generic error code such as "BAD_REQUEST" (keep using TRPCError but change the message and/or code); ensure any other branches that reveal existence of the email follow the same generic response pattern.
+
+============================================================================
+File: src/server/api/routers/task.ts
+Line: 79 to 124
+Type: potential_issue
+
+Comment:
+Add pagination to prevent unbounded result sets.
+
+The list procedure uses findMany without take/skip or cursor-based pagination. For projects with many tasks, this could return thousands of records, causing performance degradation and potential timeouts.
+
+Consider adding pagination parameters:
+
+
+Suggested approach
+
+     .input(
+       z.object({
+         projectId: z.string().cuid(),
+         status: z.nativeEnum(TaskStatus).optional(),
+         priority: z.nativeEnum(TaskPriority).optional(),
+         assigneeId: z.string().cuid().optional(),
+         tagIds: z.array(z.string().cuid()).optional(),
+         search: z.string().optional(),
++        limit: z.number().int().min(1).max(100).default(50),
++        cursor: z.string().cuid().optional(),
+       }),
+     )
+     .query(async ({ ctx, input }) => {
+       // ... membership check ...
+
+-      return ctx.db.task.findMany({
++      const tasks = await ctx.db.task.findMany({
++        take: input.limit + 1,
++        cursor: input.cursor ? { id: input.cursor } : undefined,
+         where: {
+           // ... filters ...
+         },
+         include: taskInclude,
+         orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+       });
++
++      let nextCursor: string | undefined;
++      if (tasks.length > input.limit) {
++        const nextItem = tasks.pop();
++        nextCursor = nextItem?.id;
++      }
++
++      return { tasks, nextCursor };
+     }),
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/api/routers/task.ts around lines 79 - 124, The list procedure currently calls ctx.db.task.findMany with no pagination; update the input schema for the list protectedProcedure (the z.object passed to list) to accept pagination params (e.g., limit/take and optional cursor or skip) and apply those to the ctx.db.task.findMany call (use take: limit and either skip or cursor with cursor: { id: cursorId } and skip: 1 for cursor-based paging) while preserving existing filters (status, priority, assigneeId, tagIds, search) and include: taskInclude and orderBy; validate and clamp the limit to a sane max to prevent unbounded result sets.
+
+============================================================================
+File: src/components/tasks/TaskBoard.tsx
+Line: 63 to 67
+Type: potential_issue
+
+Comment:
+onDragLeave may cause flickering when dragging over child elements.
+
+When dragging over nested elements (e.g., TaskCard), onDragLeave fires on the parent section, resetting the highlight. The rapid toggle between onDragLeave and onDragOver can cause visual flickering. Consider checking if the related target is still within the drop zone:
+
+
+
+
+🛠️ Proposed fix
+
+             onDragOver={(event) => {
+               event.preventDefault();
+               setDragTarget(status);
+             }}
+-            onDragLeave={() => setDragTarget(null)}
++            onDragLeave={(event) => {
++              if (!event.currentTarget.contains(event.relatedTarget as Node)) {
++                setDragTarget(null);
++              }
++            }}
+             onDrop={() => handleDrop(status)}
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/components/tasks/TaskBoard.tsx around lines 63 - 67, The onDragLeave handler on the TaskBoard is causing flicker because it clears the drag highlight whenever any child element triggers leave; update the onDragLeave logic used with setDragTarget so it inspects the DragEvent.relatedTarget (or event.nativeEvent.relatedTarget in React) and only calls setDragTarget(null) if the related target is not contained within the current drop zone (use event.currentTarget.contains(relatedTarget)). Apply this change in the handlers around onDragOver/onDragLeave where setDragTarget(status) and setDragTarget(null) are used (refer to the onDragOver/onDragLeave handlers and the setDragTarget usage in TaskBoard.tsx for status/TaskCard zones).
+
+============================================================================
+File: .github/workflows/deploy.yml
+Line: 41 to 45
+Type: potential_issue
+
+Comment:
+Add npm run build step before deployment.
+
+The workflow runs lint and test but skips the build step. If the project requires a build phase (bundling, transpilation, etc.), this could result in deploying incomplete or broken artifacts. Even if SST handles some building internally, an explicit build step catches errors earlier in the pipeline.
+
+Based on learnings: "Before concluding changes, run npm run lint, npm run build, and npm run test to ensure no regressions are introduced."
+
+
+
+
+🔧 Proposed fix
+
+       - name: Run Tests
+         run: npm run test
+
++      - name: Build
++        run: npm run build
++
+       - name: Deploy via SST
+         run: npx sst deploy --stage production
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @.github/workflows/deploy.yml around lines 41 - 45, Insert an explicit build step into the GitHub Actions workflow before the "Deploy via SST" job to run the project's build task; specifically, add a new job step (e.g., named "Build") that runs the command npm run build and place it between the existing "Run Tests" step and the "Deploy via SST" step so that the pipeline executes lint/test/build before running npx sst deploy --stage production.
+
+============================================================================
+File: README.md
+Line: 175 to 182
+Type: potential_issue
+
+Comment:
+Add npm run test to the verification commands.
+
+The verification section should include running tests in addition to linting and building. This ensures no regressions are introduced before concluding changes. Based on learnings: Before concluding changes, run npm run lint, npm run build, and npm run test to ensure no regressions are introduced.
+
+
+
+
+📝 Proposed addition to verification section
+
+ The final implementation has been verified with:
+
+ bash
+ npm run lint
+ npm run build
++npm run test
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @README.md around lines 175 - 182, Update the "Verification" section under the "## Verification" heading in README.md: add the test command to the verification commands by including npm run test alongside the existing npm run lint and npm run build entries in the verification code block so the steps read lint, build, and test before concluding changes.
+
+============================================================================
+File: src/pages/projects/[id]/settings.tsx
+Line: 350 to 356
+Type: potential_issue
+
+Comment:
+Unhandled promise rejection if role update fails.
+
+Using void mutateAsync(...) suppresses TypeScript's floating-promise warning but doesn't catch errors. If the API call fails, the user sees no feedback.
+
+
+
+
+🐛 Suggested fix: wrap in async handler with try/catch
+
+
+-    void updateMemberRole.mutateAsync({
+-      projectId,
+-      userId: member.user.id,
+-      role,
+-    })
+-  }
++  onChange={async (role) => {
++    setMessage("");
++    try {
++      await updateMemberRole.mutateAsync({
++        projectId,
++        userId: member.user.id,
++        role,
++      });
++      setMessage("Role updated.");
++    } catch (error) {
++      setMessage(getErrorMessage(error));
++    }
++  }}
+ />
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/projects/[id]/settings.tsx around lines 350 - 356, The onChange handler currently calls updateMemberRole.mutateAsync with void which silences the promise and leaves failures unhandled; change the onChange to an async function that awaits updateMemberRole.mutateAsync(...) inside a try/catch, referencing the same parameters (projectId, userId: member.user.id, role) and handle errors in the catch (e.g., revert UI state and show user feedback via your existing toast/error handler or setError). Ensure you still await the mutation so optimistic UI updates or loading states can be managed and errors are surfaced to the user.
+
+============================================================================
+File: src/pages/projects/[id]/settings.tsx
+Line: 364 to 369
+Type: potential_issue
+
+Comment:
+Same issue: unhandled promise rejection if member removal fails.
+
+Wrap in try/catch to provide user feedback on failure.
+
+
+
+
+🐛 Suggested fix
+
+
+-    void removeMember.mutateAsync({
+-      projectId,
+-      userId: member.user.id,
+-    })
+-  }
++  onClick={async () => {
++    setMessage("");
++    try {
++      await removeMember.mutateAsync({
++        projectId,
++        userId: member.user.id,
++      });
++      setMessage("Member removed.");
++    } catch (error) {
++      setMessage(getErrorMessage(error));
++    }
++  }}
+ >
+   Remove
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/pages/projects/[id]/settings.tsx around lines 364 - 369, The onClick handler currently calls removeMember.mutateAsync({ projectId, userId: member.user.id }) without awaiting or handling errors; wrap that call in an async function and use try/catch around removeMember.mutateAsync in the onClick handler (the same handler that invokes removeMember.mutateAsync) to catch failures and surface user feedback (e.g., toast or setState for an error message) and optionally handle loading state or rollback UI changes on error.
+
+============================================================================
+File: src/server/auth/signup.ts
+Line: 3 to 7
+Type: potential_issue
+
+Comment:
+Add maximum length constraints to prevent DoS and database issues.
+
+All fields lack maximum length validation, which could allow malicious actors to submit extremely large payloads causing denial-of-service, database overflow, or memory exhaustion.
+
+
+
+
+🛡️ Proposed fix to add max length constraints
+
+ export const signupSchema = z.object({
+-  name: z.string().min(2, "Name must be at least 2 characters"),
+-  email: z.string().email("Invalid email address"),
+-  password: z.string().min(12, "Password must be at least 12 characters"),
++  name: z.string().min(2, "Name must be at least 2 characters").max(100, "Name must not exceed 100 characters"),
++  email: z.string().email("Invalid email address").max(255, "Email must not exceed 255 characters"),
++  password: z.string().min(12, "Password must be at least 12 characters").max(128, "Password must not exceed 128 characters"),
+ });
+
+Prompt for AI Agent:
+Verify each finding against the current code and only fix it if needed.
+
+In @src/server/auth/signup.ts around lines 3 - 7, The signupSchema currently only enforces minimum lengths; update signupSchema to add sensible maximums to each string to prevent oversized payloads (e.g., name: z.string().min(2).max(100), email: z.string().email().max(254), password: z.string().min(12).max(128)); modify the existing name, email, and password validators in signupSchema to chain .max(...) with those limits (or other appropriate limits for your application) and keep the existing error messages or add matching max-length messages.
+

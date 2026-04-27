@@ -179,6 +179,7 @@ The final implementation has been verified with:
 ```bash
 npm run lint
 npm run build
+npm run test
 ```
 
 ## CI/CD
