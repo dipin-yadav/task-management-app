@@ -6,7 +6,7 @@ A full-stack task management and collaboration app built with the T3 Stack. Team
 
 - **Framework:** Next.js 14, Pages Router
 - **Language:** TypeScript, strict mode
-- **Node.js:** >= 20.x (LTS)
+- **Node.js:** >= 20.x (24.x LTS recommended)
 - **Styling:** Tailwind CSS
 - **API:** tRPC v11 with SuperJSON
 - **Auth:** NextAuth.js v4, Credentials provider
@@ -32,7 +32,7 @@ A full-stack task management and collaboration app built with the T3 Stack. Team
 
 ### Prerequisites
 
-- Node.js >= 20.x
+- Node.js >= 20.x (24.x LTS recommended)
 - npm >= 10.x
 - Docker, optional for local PostgreSQL
 
@@ -190,7 +190,7 @@ This project uses **GitHub Actions** for automated testing and deployment.
 
 The workflow is defined in `.github/workflows/deploy.yml`. It triggers on pushes to the `main` branch and performs the following:
 1.  Checks out the code.
-2.  Sets up Node.js 20.
+2.  Sets up Node.js 24.
 3.  Configures AWS credentials using **OpenID Connect (OIDC)**.
 4.  Installs dependencies.
 5.  Runs linting (`npm run lint`).

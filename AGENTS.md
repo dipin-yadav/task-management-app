@@ -14,7 +14,7 @@ Users can sign up, sign in, create projects, manage project members, create task
 |---|---|---|
 | Framework | Next.js 14 | Pages Router only, not App Router |
 | Language | TypeScript | Strict mode, `noUncheckedIndexedAccess: true` |
-| Node.js | >= 20.x | LTS recommended |
+| Node.js | >= 20.x | 24.x (LTS) recommended |
 | Styling | Tailwind CSS v3 | PostCSS via `postcss.config.cjs` |
 | API Layer | tRPC v11 | End-to-end typed RPC |
 | Auth | NextAuth.js v4 | Credentials provider, email/password |
@@ -261,7 +261,7 @@ npx prisma migrate dev
 npm run dev
 ```
 
-Recommended Node.js version: **20.x (LTS)**.
+Recommended Node.js version: **24.x (LTS)**.
 
 Available scripts:
 

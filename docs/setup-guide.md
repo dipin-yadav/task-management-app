@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- **Node.js** >= 18.x
+- **Node.js** >= 20.x (24.x LTS recommended)
 - **npm** >= 9.x
 - **AWS CLI** configured with valid credentials
 - **Supabase account** (free tier works for development)
