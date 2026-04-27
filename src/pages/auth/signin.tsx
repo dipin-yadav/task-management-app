@@ -48,23 +48,23 @@ export default function SignIn() {
           content="Sign in to your Task Manager account"
         />
       </Head>
-      <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-sm">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-white">Welcome Back</h1>
-            <p className="mt-2 text-sm text-gray-400">
+            <h1 className="text-3xl font-bold text-slate-900">Welcome Back</h1>
+            <p className="mt-2 text-sm text-slate-500">
               Sign in to your account
             </p>
           </div>
 
           {router.query.registered && (
-            <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-300">
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-600">
               Account created successfully! Please sign in.
             </div>
           )}
 
           {error && (
-            <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
               {error}
             </div>
           )}
@@ -73,7 +73,7 @@ export default function SignIn() {
             <div>
               <label
                 htmlFor="email"
-                className="mb-1.5 block text-sm font-medium text-gray-300"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
               >
                 Email
               </label>
@@ -83,7 +83,7 @@ export default function SignIn() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-gray-500 outline-none transition focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-400 outline-none transition focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                 placeholder="you@example.com"
               />
             </div>
@@ -91,7 +91,7 @@ export default function SignIn() {
             <div>
               <label
                 htmlFor="password"
-                className="mb-1.5 block text-sm font-medium text-gray-300"
+                className="mb-1.5 block text-sm font-medium text-slate-700"
               >
                 Password
               </label>
@@ -101,7 +101,7 @@ export default function SignIn() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-gray-500 outline-none transition focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 placeholder-slate-400 outline-none transition focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                 placeholder="••••••••"
               />
             </div>
@@ -109,17 +109,17 @@ export default function SignIn() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-purple-600 px-4 py-2.5 font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-lg bg-slate-950 px-4 py-2.5 font-semibold text-white transition hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
             >
               {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-gray-400">
+          <p className="mt-6 text-center text-sm text-slate-500">
             Don&apos;t have an account?{" "}
             <Link
               href="/auth/signup"
-              className="font-medium text-purple-400 hover:text-purple-300"
+              className="font-medium text-slate-900 hover:text-slate-700 underline underline-offset-4"
             >
               Sign up
             </Link>
