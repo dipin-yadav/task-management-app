@@ -14,6 +14,7 @@ Users can sign up, sign in, create projects, manage project members, create task
 |---|---|---|
 | Framework | Next.js 14 | Pages Router only, not App Router |
 | Language | TypeScript | Strict mode, `noUncheckedIndexedAccess: true` |
+| Node.js | >= 20.x | LTS recommended |
 | Styling | Tailwind CSS v3 | PostCSS via `postcss.config.cjs` |
 | API Layer | tRPC v11 | End-to-end typed RPC |
 | Auth | NextAuth.js v4 | Credentials provider, email/password |
@@ -260,6 +261,8 @@ npx prisma migrate dev
 npm run dev
 ```
 
+Recommended Node.js version: **20.x (LTS)**.
+
 Available scripts:
 
 | Command | Description |
@@ -327,7 +330,7 @@ Available scripts:
 | 3 | Core Features API | Complete |
 | 4 | UI/UX Implementation | Complete |
 | 5 | Testing | Complete |
-| 6 | Deployment with SST/AWS | Complete |
+| 6 | Deployment with SST/AWS & CI/CD | Complete |
 | 7 | Documentation & Polish | Complete |
 
 ### Built
@@ -344,6 +347,7 @@ Available scripts:
 - `npm run lint` and `npm run build` verified after Phase 4
 - `npm run test`, `npm run lint`, and `npm run build` verified after Phase 5
 - SST v3 initialized and deployed to AWS
+- GitHub Actions CI/CD pipeline implemented with AWS OIDC
 - Final documentation, testing, and polish completed
 
 ### Remaining
@@ -362,6 +366,8 @@ Available scripts:
 8. tRPC uses SuperJSON on both client and server.
 9. Production Supabase should use pooled `DATABASE_URL` for runtime and direct `DIRECT_URL` for migrations.
 10. Phase 4 intentionally added no new npm dependencies.
+11. Deployment requires `AWS_OIDC_ROLE_ARN` secret in GitHub for the CI/CD pipeline.
+12. SST secrets must be set for the `production` stage via `npx sst secret set`.
 
 ## 13. AI Agent Workflow Instructions
 

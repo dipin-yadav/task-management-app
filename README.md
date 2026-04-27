@@ -6,12 +6,14 @@ A full-stack task management and collaboration app built with the T3 Stack. Team
 
 - **Framework:** Next.js 14, Pages Router
 - **Language:** TypeScript, strict mode
+- **Node.js:** >= 20.x (LTS)
 - **Styling:** Tailwind CSS
 - **API:** tRPC v11 with SuperJSON
 - **Auth:** NextAuth.js v4, Credentials provider
 - **ORM:** Prisma v5
 - **Database:** PostgreSQL
 - **Package Manager:** npm with exact dependency versions
+- **CI/CD:** GitHub Actions with AWS OIDC
 
 ## Current Features
 
@@ -30,8 +32,8 @@ A full-stack task management and collaboration app built with the T3 Stack. Team
 
 ### Prerequisites
 
-- Node.js >= 18.x
-- npm >= 9.x
+- Node.js >= 20.x
+- npm >= 10.x
 - Docker, optional for local PostgreSQL
 
 ### 1. Install Dependencies
@@ -179,31 +181,53 @@ npm run lint
 npm run build
 ```
 
+## CI/CD
+
+This project uses **GitHub Actions** for automated testing and deployment.
+
+### GitHub Actions Workflow
+
+The workflow is defined in `.github/workflows/deploy.yml`. It triggers on pushes to the `main` branch and performs the following:
+1.  Checks out the code.
+2.  Sets up Node.js 20.
+3.  Configures AWS credentials using **OpenID Connect (OIDC)**.
+4.  Installs dependencies.
+5.  Runs linting (`npm run lint`).
+6.  Runs unit tests (`npm run test`).
+7.  Deploys to AWS via SST (`npx sst deploy --stage production`).
+
+### Security with OIDC
+
+We use AWS OIDC to avoid storing long-lived AWS Access Keys in GitHub. The workflow assumes a specific IAM Role in AWS that is cryptographically trusted by GitHub.
+
+**Required GitHub Secrets:**
+- `AWS_OIDC_ROLE_ARN`: The ARN of the IAM Role for deployment.
+
 ## Deployment
 
-This application is deployed to AWS using **SST v3 (Ion)**.
+This application is deployed to AWS using **SST v3 (Ion)**. While deployment is automated via CI/CD, manual deployment is still possible.
 
 ### Deployment Commands
 
-1. **Install AWS CLI & Configure**
-   ```bash
-   aws configure
-   ```
-2. **Initialize SST** (already completed)
-   ```bash
-   npx sst@latest init
-   npm install -D sst@latest
-   ```
-3. **Set Secrets** (Production)
+1. **Configure OIDC Role**
+   Follow the steps in the AWS Console to create an OIDC Identity Provider and a Role with the `SST-Managed-Deploy-Policy`.
+
+2. **Set Secrets** (Production)
+   SST secrets are stored in AWS SSM. Set them once from your local machine:
    ```bash
    npx sst secret set DATABASE_URL "your-pooled-supabase-url" --stage production
    npx sst secret set NEXTAUTH_SECRET "your-nextauth-secret" --stage production
    npx sst secret set NEXTAUTH_URL "https://your-cloudfront-url.cloudfront.net" --stage production
    ```
-4. **Deploy**
+
+3. **Deploy**
+   Push to the `main` branch to trigger the GitHub Actions pipeline.
+
+4. **Manual Deploy** (Optional)
    ```bash
    npx sst deploy --stage production
    ```
+
 5. **Teardown** (if needed)
    ```bash
    npx sst remove --stage production
