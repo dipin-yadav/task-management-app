@@ -144,8 +144,8 @@ All application APIs are type-safe tRPC procedures except sign-up, which is a RE
 | Phase 2: Authentication | Complete |
 | Phase 3: Core Features API | Complete |
 | Phase 4: UI/UX Implementation | Complete |
-| Phase 5: Unit Tests | In progress |
-| Phase 6: Deployment | Not started |
+| Phase 5: Unit Tests | Complete |
+| Phase 6: Deployment | Complete |
 | Phase 7: Documentation & Polish | In progress |
 
 ## Verification
@@ -159,4 +159,30 @@ npm run build
 
 ## Deployment
 
-SST/AWS deployment is planned for Phase 6. Production database configuration is expected to use Supabase PostgreSQL with pooled `DATABASE_URL` for runtime and direct `DIRECT_URL` for migrations.
+This application is deployed to AWS using **SST v3 (Ion)**.
+
+### Deployment Commands
+
+1. **Install AWS CLI & Configure**
+   ```bash
+   aws configure
+   ```
+2. **Initialize SST** (already completed)
+   ```bash
+   npx sst@latest init
+   npm install -D sst@latest
+   ```
+3. **Set Secrets** (Production)
+   ```bash
+   npx sst secret set DATABASE_URL "your-pooled-supabase-url" --stage production
+   npx sst secret set NEXTAUTH_SECRET "your-nextauth-secret" --stage production
+   npx sst secret set NEXTAUTH_URL "https://your-cloudfront-url.cloudfront.net" --stage production
+   ```
+4. **Deploy**
+   ```bash
+   npx sst deploy --stage production
+   ```
+5. **Teardown** (if needed)
+   ```bash
+   npx sst remove --stage production
+   ```

@@ -327,7 +327,7 @@ Available scripts:
 | 3 | Core Features API | Complete |
 | 4 | UI/UX Implementation | Complete |
 | 5 | Testing | Complete |
-| 6 | Deployment with SST/AWS | Not started |
+| 6 | Deployment with SST/AWS | Complete |
 | 7 | Documentation & Polish | In progress |
 
 ### Built
@@ -343,10 +343,10 @@ Available scripts:
 - Vitest unit tests for password helpers, signup validation, project router CRUD, task router CRUD, and non-member authorization
 - `npm run lint` and `npm run build` verified after Phase 4
 - `npm run test`, `npm run lint`, and `npm run build` verified after Phase 5
+- SST v3 initialized and deployed to AWS
 
 ### Remaining
 
-- SST deployment configuration and AWS deployment
 - Final documentation polish and end-to-end manual QA
 
 ## 12. Common Gotchas

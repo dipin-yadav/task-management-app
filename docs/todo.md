@@ -142,13 +142,13 @@
 - [ ] Run all tests and verify passing
 
 ## Phase 6: Deployment
-- [ ] Configure AWS credentials
-- [ ] Ensure IAM permissions for SST deployment
-- [ ] Run `sst deploy --stage staging` and verify
-- [ ] Test all features on staging URL
-- [ ] Run `sst deploy --stage production`
-- [ ] Set `NEXTAUTH_URL` to production CloudFront domain
-- [ ] Verify production deployment end-to-end
+- [x] Configure AWS credentials
+- [x] Ensure IAM permissions for SST deployment
+- [x] Run `sst deploy --stage staging` and verify
+- [x] Test all features on staging URL
+- [x] Run `sst deploy --stage production`
+- [x] Set `NEXTAUTH_URL` to production CloudFront domain
+- [x] Verify production deployment end-to-end
 
 ## Phase 7: Documentation & Polish
 - [ ] Write comprehensive `README.md`
