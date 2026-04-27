@@ -79,6 +79,7 @@ The IAM user/role needs permissions for:
 - **S3** (static assets)
 - **CloudFront** (CDN distribution)
 - **IAM** (role creation for Lambda)
+- **DynamoDB** (for Next.js revalidation/ISR)
 - **API Gateway** (if used)
 
 > **Tip:** For development, `AdministratorAccess` policy works. For production, create a more restrictive policy.
