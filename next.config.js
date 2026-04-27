@@ -9,15 +9,15 @@ if (process.env.SKIP_ENV_VALIDATION !== "true") {
 /** @type {import("next").NextConfig} */
 const config = {
   reactStrictMode: true,
-  
+
   // 1. Disable Type Checking & Linting (HUGE RAM SAVINGS)
   // Your 2-core CPU will choke trying to do this and bundle at the same time.
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // typescript: {
+  //   ignoreBuildErrors: true,
+  // },
+  // eslint: {
+  //   ignoreDuringBuilds: true,
+  // },
 
   /**
    * If you are using `appDir` then you must comment the below `i18n` config out.
@@ -31,13 +31,13 @@ const config = {
   transpilePackages: ["geist"],
 
   // 2. Reduce the bundling footprint
-  experimental: {
-    // Prevents Next.js from trying to build multiple things in parallel
-    // which spikes RAM usage immediately.
-    parallelServerBuildTraces: false,
-    parallelServerCompiles: false,
-    serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
-  },
+  // experimental: {
+  //   // Prevents Next.js from trying to build multiple things in parallel
+  //   // which spikes RAM usage immediately.
+  //   parallelServerBuildTraces: false,
+  //   parallelServerCompiles: false,
+  //   serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
+  // },
 };
 
 export default config;
