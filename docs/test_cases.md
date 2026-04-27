@@ -20,7 +20,7 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 | 1.10 | Initial migration created and applied | ✅ Done | `20260425162350_init` migration exists |
 | 1.11 | App builds and runs locally with `npm run dev` | ✅ Done | Verified by user |
 | 1.12 | Tailwind CSS configured and working | ✅ Done | Default T3 setup |
-| 1.13 | SST initialized (`sst.config.ts`) | ❌ Not Done | Not yet configured |
+| 1.13 | SST initialized (`sst.config.ts`) | ✅ Done | Configured and deployed |
 | 1.14 | `NEXTAUTH_SECRET` set in `.env` | ✅ Done | Generated and configured |
 
 ---
@@ -176,10 +176,10 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 6.1 | AWS credentials configured | ❌ Not Done | Later |
-| 6.2 | SST deploy to staging succeeds | ❌ Not Done | Later |
-| 6.3 | All features work on staging URL | ❌ Not Done | Later |
-| 6.4 | SST deploy to production succeeds | ❌ Not Done | Later |
+| 6.1 | AWS credentials configured | ✅ Done | Configured |
+| 6.2 | SST deploy to staging succeeds | ✅ Done | Deployed |
+| 6.3 | All features work on staging URL | ✅ Done | Verified |
+| 6.4 | SST deploy to production succeeds | ✅ Done | Deployed |
 
 ---
 
@@ -202,11 +202,11 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 
 | Phase | Total | Done | Remaining |
 |-------|-------|------|-----------|
-| Phase 1: Setup & Foundation | 14 | 13 | 1 |
+| Phase 1: Setup & Foundation | 14 | 14 | 0 |
 | Phase 2: Authentication | 25 | 25 | 0 |
 | Phase 3: Core Features (API) | 24 | 24 | 0 |
 | Phase 4: UI/UX | 16 | 16 | 0 |
 | Phase 5: Unit Tests | 10 | 10 | 0 |
-| Phase 6: Deployment | 4 | 0 | 4 |
+| Phase 6: Deployment | 4 | 4 | 0 |
 | Phase 7: Documentation | 8 | 7 | 1 |
-| **Total** | **101** | **95** | **6** |
+| **Total** | **101** | **100** | **1** |

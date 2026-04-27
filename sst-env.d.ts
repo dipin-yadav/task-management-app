@@ -6,6 +6,18 @@
 
 declare module "sst" {
   export interface Resource {
+    "DATABASE_URL": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "NEXTAUTH_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "NEXTAUTH_URL": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "TaskManager": {
       "type": "sst.aws.Nextjs"
       "url": string

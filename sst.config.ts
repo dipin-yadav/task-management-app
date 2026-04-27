@@ -9,11 +9,15 @@ export default $config({
     };
   },
   async run() {
+    const databaseUrl = new sst.Secret("DATABASE_URL");
+    const nextAuthSecret = new sst.Secret("NEXTAUTH_SECRET");
+    const nextAuthUrl = new sst.Secret("NEXTAUTH_URL");
+
     new sst.aws.Nextjs("TaskManager", {
       environment: {
-        DATABASE_URL: process.env.DATABASE_URL!,
-        NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET!,
-        NEXTAUTH_URL: process.env.NEXTAUTH_URL!,
+        DATABASE_URL: databaseUrl.value,
+        NEXTAUTH_SECRET: nextAuthSecret.value,
+        NEXTAUTH_URL: nextAuthUrl.value,
       },
     });
   },

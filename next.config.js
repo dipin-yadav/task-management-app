@@ -36,6 +36,7 @@ const config = {
     // which spikes RAM usage immediately.
     parallelServerBuildTraces: false,
     parallelServerCompiles: false,
+    serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
   },
 };
 
