@@ -1,0 +1,8 @@
+node_modules/
+.next/
+.sst/
+dist/
+.git/
+.open-next/
+.kiro/
+.vscode/

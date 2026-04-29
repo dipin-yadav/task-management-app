@@ -143,7 +143,7 @@ await verifyProjectMembership(ctx.db, projectId, ctx.session.user.id);
 await verifyProjectMembership(ctx.db, projectId, ctx.session.user.id, ["OWNER", "ADMIN"]);
 ```
 
-Never rely on Supabase RLS for app authorization; Prisma bypasses it.
+Never rely on Supabase RLS for app authorization; keep project authorization in tRPC. RLS is enabled on public tables only to block direct Supabase Data API access, and server-side Prisma must use a trusted database role.
 
 ## 5. tRPC Router Reference
 
@@ -364,10 +364,11 @@ Available scripts:
 6. Use `requireAuth` for protected pages to avoid duplicated auth redirect logic and session serialization bugs.
 7. Prisma Client may need regeneration after schema changes.
 8. tRPC uses SuperJSON on both client and server.
-9. Production Supabase should use pooled `DATABASE_URL` for runtime and direct `DIRECT_URL` for migrations.
+9. Production Supabase should use the dedicated `prisma` database role, pooled `DATABASE_URL` for runtime, and direct/session `DIRECT_URL` for migrations.
 10. Phase 4 intentionally added no new npm dependencies.
-11. Deployment requires `AWS_OIDC_ROLE_ARN` secret in GitHub for the CI/CD pipeline.
-12. SST secrets must be set for the `production` stage via `npx sst secret set`.
+11. Deployment requires GitHub Actions secrets: `AWS_OIDC_ROLE_ARN`, `PRODUCTION_DATABASE_URL`, `PRODUCTION_DIRECT_URL`, `PRODUCTION_NEXTAUTH_SECRET`, and `PRODUCTION_NEXTAUTH_URL`.
+12. CI syncs these SST runtime secrets before production deploy: `DATABASE_URL` from `PRODUCTION_DATABASE_URL`, `NEXTAUTH_SECRET` from `PRODUCTION_NEXTAUTH_SECRET`, and `NEXTAUTH_URL` from `PRODUCTION_NEXTAUTH_URL`. `DIRECT_URL` is migration-only and is not an SST runtime secret.
+13. For local production deploys, set SST secrets with `npx sst secret set DATABASE_URL ... --stage production`, `npx sst secret set NEXTAUTH_SECRET ... --stage production`, and `npx sst secret set NEXTAUTH_URL ... --stage production` before `npm run deploy:production`.
 
 ## 13. AI Agent Workflow Instructions
 
