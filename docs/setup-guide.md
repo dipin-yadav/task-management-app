@@ -21,8 +21,10 @@
 
 | Variable | Where to Find | Port | Notes |
 |---|---|---|---|
-| `DATABASE_URL` | Settings → Database → Connection string → URI (Transaction mode) | `6543` | Use for app runtime |
-| `DIRECT_URL` | Settings → Database → Connection string → URI (Session mode) | `5432` | Use for Prisma migrations |
+| `DATABASE_URL` | Settings → Database → Connection string → URI (Transaction mode) | `6543` | Use the dedicated `prisma` role for app runtime |
+| `DIRECT_URL` | Settings → Database → Connection string → URI (Session mode) | `5432` | Use the dedicated `prisma` role for Prisma migrations |
+
+For production, create the dedicated Prisma database role documented in [Supabase Security Hardening](./supabase-security.md) before setting deployed secrets.
 
 ---
 
@@ -32,8 +34,8 @@ Create a `.env` file in the project root:
 
 ```env
 # ─── Supabase (PostgreSQL) ───
-DATABASE_URL="postgresql://postgres.[PROJECT_REF]:[DB_PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
-DIRECT_URL="postgresql://postgres.[PROJECT_REF]:[DB_PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
+DATABASE_URL="postgresql://prisma.[PROJECT_REF]:[PRISMA_PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://prisma.[PROJECT_REF]:[PRISMA_PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
 
 # ─── NextAuth.js ───
 NEXTAUTH_SECRET="run: openssl rand -base64 32"
@@ -102,10 +104,12 @@ Instead of `.env` files in production, use SST secrets:
 
 ```bash
 # Set secrets for a specific stage
-npx sst secret set DATABASE_URL "postgresql://..." --stage production
+npx sst secret set DATABASE_URL "postgresql://prisma.[PROJECT_REF]:[PRISMA_PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true" --stage production
 npx sst secret set NEXTAUTH_SECRET "your-secret" --stage production
 npx sst secret set NEXTAUTH_URL "https://your-domain.com" --stage production
 ```
+
+`DIRECT_URL` is required in local or CI environments that run Prisma migrations. It is not passed to the deployed Next.js runtime.
 
 ---
 
@@ -143,7 +147,8 @@ npx sst dev
 | `npx prisma db push` | Push schema without migration |
 | `npx sst dev` | Start SST dev mode |
 | `npx sst deploy --stage staging` | Deploy to staging |
-| `npx sst deploy --stage production` | Deploy to production |
+| `npm run deploy:production` | Deploy production migrations, then deploy production app |
+| `npx sst deploy --stage production` | Deploy only the production app |
 | `npx sst remove --stage staging` | Tear down staging |
 | `npm run lint` | Run ESLint |
 | `npm run build` | Build for production |
@@ -156,6 +161,8 @@ npx sst dev
 Before deploying:
 
 - [ ] All environment variables are set (SST secrets or `.env`)
+- [ ] Supabase `public` is not exposed through the Data API unless explicitly needed
+- [ ] The app uses the dedicated `prisma` database role, not broad default database credentials
 - [ ] Database migrations are applied to Supabase
 - [ ] AWS credentials are configured
 - [ ] `NEXTAUTH_URL` points to the production domain
@@ -172,6 +179,9 @@ npx sst deploy --stage staging
 # Visit the CloudFront URL output by SST
 
 # Deploy to production
+npm run deploy:production
+
+# App-only production redeploy
 npx sst deploy --stage production
 ```
 

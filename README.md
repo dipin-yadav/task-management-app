@@ -99,13 +99,14 @@ Here are all the `npm`, `npx`, and script commands needed to develop, test, and 
 | `npm run db:migrate` | Deploy Prisma migrations |
 | `npm run db:push` | Push Prisma schema without migration |
 | `npm run db:studio` | Open Prisma Studio |
+| `npm run deploy:production` | Deploy Prisma migrations, then deploy the app to production with SST |
 
 ### npx Commands
 
 | Command | Description |
 |---|---|
 | `npx prisma generate` | Generate Prisma Client (runs automatically on postinstall) |
-| `npx sst deploy --stage production` | Deploy the application to AWS using SST |
+| `npx sst deploy --stage production` | Deploy only the application to AWS using SST |
 | `npx sst remove --stage production` | Remove the deployed application from AWS |
 | `npx sst secret set <key> "<value>" --stage production` | Set SST secrets for the production environment |
 
@@ -182,6 +183,15 @@ npm run build
 npm run test
 ```
 
+## Supabase Security
+
+This app uses Supabase as hosted PostgreSQL, not as a browser-side data API. Application authorization is enforced in NextAuth and tRPC, while Supabase Row-Level Security is enabled on all app tables as a defense against direct Data API access.
+
+- RLS is enabled with no permissive policies for `Account`, `Session`, `VerificationToken`, `User`, `Project`, `ProjectMember`, `Task`, `Tag`, and `TaskTag`.
+- Keep `public` removed from Supabase exposed schemas unless a future feature intentionally uses the Supabase Data API.
+- Use a dedicated Supabase `prisma` database role for `DATABASE_URL` and `DIRECT_URL`.
+- Follow [docs/supabase-security.md](docs/supabase-security.md) after database credential rotation or Supabase Security Advisor warnings.
+
 ## CI/CD
 
 This project uses **GitHub Actions** for automated testing and deployment.
@@ -195,7 +205,9 @@ The workflow is defined in `.github/workflows/deploy.yml`. It triggers on pushes
 4.  Installs dependencies.
 5.  Runs linting (`npm run lint`).
 6.  Runs unit tests (`npm run test`).
-7.  Deploys to AWS via SST (`npx sst deploy --stage production`).
+7.  Deploys database migrations (`npm run db:migrate`).
+8.  Syncs SST runtime secrets from GitHub Actions secrets.
+9.  Deploys to AWS via SST (`npx sst deploy --stage production`).
 
 ### Security with OIDC
 
@@ -203,6 +215,17 @@ We use AWS OIDC to avoid storing long-lived AWS Access Keys in GitHub. The workf
 
 **Required GitHub Secrets:**
 - `AWS_OIDC_ROLE_ARN`: The ARN of the IAM Role for deployment.
+- `PRODUCTION_DATABASE_URL`: Supabase pooled transaction URL for the dedicated `prisma` role.
+- `PRODUCTION_DIRECT_URL`: Supabase session/direct URL for Prisma migrations with the dedicated `prisma` role.
+- `PRODUCTION_NEXTAUTH_SECRET`: Production NextAuth JWT signing secret.
+- `PRODUCTION_NEXTAUTH_URL`: Production public app URL used by NextAuth callbacks.
+
+**SST Runtime Secrets Synced by CI:**
+- `DATABASE_URL`: Set from `PRODUCTION_DATABASE_URL`.
+- `NEXTAUTH_SECRET`: Set from `PRODUCTION_NEXTAUTH_SECRET`.
+- `NEXTAUTH_URL`: Set from `PRODUCTION_NEXTAUTH_URL`.
+
+`DIRECT_URL` is migration-only and is not passed to the deployed Next.js runtime.
 
 ## Deployment
 
@@ -216,18 +239,22 @@ This application is deployed to AWS using **SST v3 (Ion)**. While deployment is 
 2. **Set Secrets** (Production)
    SST secrets are stored in AWS SSM. Set them once from your local machine:
    ```bash
-   npx sst secret set DATABASE_URL "your-pooled-supabase-url" --stage production
+   npx sst secret set DATABASE_URL "your-pooled-supabase-prisma-role-url" --stage production
    npx sst secret set NEXTAUTH_SECRET "your-nextauth-secret" --stage production
    npx sst secret set NEXTAUTH_URL "https://your-cloudfront-url.cloudfront.net" --stage production
    ```
+
+   These correspond to the three `sst.Secret(...)` values declared in `sst.config.ts`. `DIRECT_URL` is only needed where migrations run.
 
 3. **Deploy**
    Push to the `main` branch to trigger the GitHub Actions pipeline.
 
 4. **Manual Deploy** (Optional)
    ```bash
-   npx sst deploy --stage production
+   npm run deploy:production
    ```
+
+   This runs `prisma migrate deploy` before `sst deploy --stage production`. For an app-only redeploy, use `npx sst deploy --stage production`.
 
 5. **Teardown** (if needed)
    ```bash

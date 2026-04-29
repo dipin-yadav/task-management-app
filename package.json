@@ -9,6 +9,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
+    "deploy:production": "npm run db:migrate && sst deploy --stage production",
     "dev": "next dev",
     "postinstall": "prisma generate",
     "lint": "next lint",

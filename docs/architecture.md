@@ -171,6 +171,7 @@ erDiagram
 | `Session` + `Account` tables | Standard NextAuth / Prisma Adapter schema |
 | Supabase connection pooler (port 6543) for `DATABASE_URL` | Prevents connection exhaustion in serverless Lambda |
 | `DIRECT_URL` (port 5432) for Prisma migrations | Migrations need direct connection, not pooled |
+| RLS enabled with no permissive policies | Blocks direct Supabase Data API access to app tables |
 
 ---
 
@@ -318,8 +319,8 @@ export default $config({
 
 | Variable | Source | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Supabase Dashboard → Settings → Database | Pooled connection string (port 6543) |
-| `DIRECT_URL` | Supabase Dashboard → Settings → Database | Direct connection for Prisma migrations (port 5432) |
+| `DATABASE_URL` | Supabase Dashboard -> Settings -> Database | Pooled connection string for the dedicated `prisma` role (port 6543) |
+| `DIRECT_URL` | Supabase Dashboard -> Settings -> Database | Direct/session connection for Prisma migrations with the dedicated `prisma` role (port 5432) |
 | `NEXTAUTH_SECRET` | Generated (`openssl rand -base64 32`) | JWT signing secret |
 | `NEXTAUTH_URL` | CloudFront domain or custom domain | Base URL for NextAuth callbacks |
 
@@ -370,7 +371,10 @@ src/components/
 ### ⚠️ Supabase + Prisma in Serverless
 - Always use the **connection pooler URL** (port `6543`, Transaction Mode) for `DATABASE_URL` in production/Lambda.
 - Use the **direct URL** (port `5432`) only for `DIRECT_URL` (used by `prisma migrate`).
-- Prisma bypasses Supabase RLS — all authorization must be handled in tRPC middleware.
+- Use the dedicated `prisma` database role documented in `docs/supabase-security.md`.
+- RLS is enabled on app tables with no permissive policies to block direct Supabase Data API access.
+- Application authorization must still be handled in tRPC middleware; do not depend on Supabase Auth `auth.uid()` policies because this app uses NextAuth.
+- Remove `public` from Supabase exposed schemas if the app remains Prisma-only.
 
 ### ❗ NextAuth Credentials Provider Limitations
 - NextAuth does not provide a built-in signup page or API route for the Credentials provider. You must implement `/api/auth/signup` manually.

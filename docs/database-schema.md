@@ -213,16 +213,22 @@ model TaskTag {
 ```env
 # .env
 
-# Use the connection pooler for app runtime (port 6543, Transaction Mode)
-DATABASE_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
+# Use the dedicated prisma role with the connection pooler for app runtime
+DATABASE_URL="postgresql://prisma.[PROJECT_REF]:[PRISMA_PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
 
-# Use direct connection for migrations only (port 5432)
-DIRECT_URL="postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
+# Use the dedicated prisma role with direct/session mode for migrations only
+DIRECT_URL="postgresql://prisma.[PROJECT_REF]:[PRISMA_PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
 
 # NextAuth
 NEXTAUTH_SECRET="your-generated-secret"
 NEXTAUTH_URL="http://localhost:3000"
 ```
+
+### Supabase RLS Posture
+
+All application tables in `public` have RLS enabled by migration. No permissive RLS policies are defined, so Supabase Data API requests using `anon` or `authenticated` cannot directly read or mutate app rows. Server-side Prisma uses a trusted database role and app authorization remains in tRPC.
+
+For dashboard hardening, Prisma role setup, credential rotation, and Security Advisor verification, see [Supabase Security Hardening](./supabase-security.md).
 
 ### Migration Commands
 

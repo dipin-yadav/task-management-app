@@ -47,5 +47,21 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Deploy Database Migrations
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+        run: npm run db:migrate
+
+      - name: Sync SST Runtime Secrets
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.PRODUCTION_NEXTAUTH_SECRET }}
+          NEXTAUTH_URL: ${{ secrets.PRODUCTION_NEXTAUTH_URL }}
+        run: |
+          npx sst secret set DATABASE_URL "$DATABASE_URL" --stage production
+          npx sst secret set NEXTAUTH_SECRET "$NEXTAUTH_SECRET" --stage production
+          npx sst secret set NEXTAUTH_URL "$NEXTAUTH_URL" --stage production
+
       - name: Deploy via SST
         run: npx sst deploy --stage production
