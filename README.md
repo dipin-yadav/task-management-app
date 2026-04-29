@@ -189,7 +189,7 @@ This app uses Supabase as hosted PostgreSQL, not as a browser-side data API. App
 
 - RLS is enabled with no permissive policies for `Account`, `Session`, `VerificationToken`, `User`, `Project`, `ProjectMember`, `Task`, `Tag`, and `TaskTag`.
 - Keep `public` removed from Supabase exposed schemas unless a future feature intentionally uses the Supabase Data API.
-- Use a dedicated Supabase `prisma` database role for `DATABASE_URL` and `DIRECT_URL`.
+- Use a dedicated Supabase `prisma` database role for `DATABASE_URL` and `DIRECT_URL`; for existing databases, transfer ownership of Prisma-managed tables to that role before running production migrations.
 - Follow [docs/supabase-security.md](docs/supabase-security.md) after database credential rotation or Supabase Security Advisor warnings.
 
 ## CI/CD

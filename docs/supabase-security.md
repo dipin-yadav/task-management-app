@@ -50,6 +50,45 @@ grant all on all sequences in schema public to prisma;
 alter default privileges for role postgres in schema public grant all on tables to prisma;
 alter default privileges for role postgres in schema public grant all on routines to prisma;
 alter default privileges for role postgres in schema public grant all on sequences to prisma;
+
+do $$
+declare
+  table_name text;
+  type_name text;
+begin
+  foreach table_name in array array[
+    'Account',
+    'Session',
+    'VerificationToken',
+    'User',
+    'Project',
+    'ProjectMember',
+    'Task',
+    'Tag',
+    'TaskTag',
+    '_prisma_migrations'
+  ] loop
+    if to_regclass(format('public.%I', table_name)) is not null then
+      execute format('alter table public.%I owner to prisma', table_name);
+    end if;
+  end loop;
+
+  foreach type_name in array array[
+    'ProjectRole',
+    'TaskStatus',
+    'TaskPriority'
+  ] loop
+    if exists (
+      select 1
+      from pg_type t
+      join pg_namespace n on n.oid = t.typnamespace
+      where n.nspname = 'public' and t.typname = type_name
+    ) then
+      execute format('alter type public.%I owner to prisma', type_name);
+    end if;
+  end loop;
+end
+$$;
 ```
 
 Use the `prisma` role in both connection strings:
@@ -58,6 +97,8 @@ Use the `prisma` role in both connection strings:
 DATABASE_URL="postgresql://prisma.[PROJECT_REF]:[PRISMA_PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
 DIRECT_URL="postgresql://prisma.[PROJECT_REF]:[PRISMA_PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
 ```
+
+The ownership transfer is required for existing databases whose tables were created by `postgres`. `GRANT ALL` is not enough for migrations that run `ALTER TABLE`, including the RLS migration.
 
 For SST production secrets:
 
