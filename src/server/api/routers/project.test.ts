@@ -62,7 +62,7 @@ describe("project router", () => {
       include: {
         _count: { select: { members: true, tasks: true } },
         owner: {
-          select: { id: true, name: true, email: true, image: true },
+          select: { id: true, name: true, image: true },
         },
       },
       orderBy: { updatedAt: "desc" },
@@ -264,7 +264,7 @@ describe("project router", () => {
       }),
     ).rejects.toMatchObject({
       code: "NOT_FOUND",
-      message: "No user found with that email address",
+      message: "Member could not be added to the project",
     });
 
     expect(db.user.findUnique).toHaveBeenCalledWith({

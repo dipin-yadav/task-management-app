@@ -91,7 +91,7 @@ export const projectRouter = createTRPCRouter({
       include: {
         _count: { select: { members: true, tasks: true } },
         owner: {
-          select: { id: true, name: true, email: true, image: true },
+          select: { id: true, name: true, image: true },
         },
       },
       orderBy: { updatedAt: "desc" },
@@ -107,7 +107,7 @@ export const projectRouter = createTRPCRouter({
   getById: protectedProcedure
     .input(z.object({ id: z.string().cuid() }))
     .query(async ({ ctx, input }) => {
-      await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id);
+      const callerMembership = await verifyProjectMembership(ctx.db, input.id, ctx.session.user.id);
 
       const project = await ctx.db.project.findUnique({
         where: { id: input.id },
@@ -138,6 +138,28 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
+      // Mitigation: Mask emails for users who are not OWNER or ADMIN
+      const isPrivileged = callerMembership.role === "OWNER" || callerMembership.role === "ADMIN";
+
+      const sanitizedMembers = project.members.map((member) => ({
+        ...member,
+        user: {
+          ...member.user,
+          email:
+            isPrivileged || member.userId === ctx.session.user.id
+              ? member.user.email
+              : null,
+        },
+      }));
+
+      const sanitizedOwner = {
+        ...project.owner,
+        email:
+          isPrivileged || project.ownerId === ctx.session.user.id
+            ? project.owner.email
+            : null,
+      };
+
       // Get task counts grouped by status
       const taskCounts = await ctx.db.task.groupBy({
         by: ["status"],
@@ -158,6 +180,8 @@ export const projectRouter = createTRPCRouter({
 
       return {
         ...project,
+        members: sanitizedMembers,
+        owner: sanitizedOwner,
         taskCounts: taskCountMap,
       };
     }),
@@ -264,7 +288,7 @@ export const projectRouter = createTRPCRouter({
       if (!userToAdd) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "No user found with that email address",
+          message: "Member could not be added to the project",
         });
       }
 
@@ -281,7 +305,7 @@ export const projectRouter = createTRPCRouter({
       if (existingMembership) {
         throw new TRPCError({
           code: "CONFLICT",
-          message: "User is already a member of this project",
+          message: "Member could not be added to the project",
         });
       }
 
@@ -314,7 +338,7 @@ export const projectRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       // Verify caller has OWNER/ADMIN role
-      await verifyProjectMembership(
+      const callerMembership = await verifyProjectMembership(
         ctx.db,
         input.projectId,
         ctx.session.user.id,
@@ -343,6 +367,18 @@ export const projectRouter = createTRPCRouter({
         throw new TRPCError({
           code: "FORBIDDEN",
           message: "Cannot remove the project owner",
+        });
+      }
+
+      // Only OWNER can remove another ADMIN (except self-removal)
+      if (
+        memberToRemove.role === "ADMIN" &&
+        callerMembership.role !== "OWNER" &&
+        memberToRemove.userId !== ctx.session.user.id
+      ) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only project owner can remove other members with ADMIN role",
         });
       }
 

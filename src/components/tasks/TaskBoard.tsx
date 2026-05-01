@@ -19,7 +19,7 @@ type BoardTask = {
   assignee: {
     id: string;
     name: string | null;
-    email: string | null;
+    email?: string | null;
     image: string | null;
   } | null;
   tags: Array<{

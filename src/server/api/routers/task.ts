@@ -8,10 +8,10 @@ import { verifyProjectMembership } from "./project";
 const taskInclude = {
   tags: { include: { tag: true } },
   assignee: {
-    select: { id: true, name: true, email: true, image: true },
+    select: { id: true, name: true, image: true },
   },
   creator: {
-    select: { id: true, name: true, email: true, image: true },
+    select: { id: true, name: true, image: true },
   },
 } as const;
 
@@ -225,11 +225,25 @@ export const taskRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
-      await verifyProjectMembership(
+      const callerMembership = await verifyProjectMembership(
         ctx.db,
         task.projectId,
         ctx.session.user.id,
       );
+
+      // Only OWNER, ADMIN, or the task creator can delete the task
+      const isAuthorized =
+        callerMembership.role === "OWNER" ||
+        callerMembership.role === "ADMIN" ||
+        task.creatorId === ctx.session.user.id;
+
+      if (!isAuthorized) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to delete this task",
+        });
+      }
+
       await ctx.db.task.delete({ where: { id: input.id } });
     }),
 

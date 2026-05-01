@@ -308,7 +308,8 @@ export default function ProjectSettingsPage() {
                 <option value="MEMBER">Member</option>
                 <option value="ADMIN">Admin</option>
               </Select>
-              <div className="flex items-end">
+              <div className="flex flex-col space-y-1.5">
+                <span className="invisible text-sm font-medium">Add</span>
                 <Button
                   type="submit"
                   className="w-full"
@@ -412,9 +413,9 @@ export default function ProjectSettingsPage() {
             </div>
           </form>
 
-          <div className="space-y-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {tagsQuery.data?.map((tag) => (
-              <TagEditorRow
+              <TagEditorCard
                 key={tag.id}
                 tag={tag}
                 disabled={!canManageProject}
@@ -422,12 +423,13 @@ export default function ProjectSettingsPage() {
                 onDelete={() => void handleDeleteTag(tag.id)}
               />
             ))}
-            {tagsQuery.data?.length === 0 ? (
-              <p className="rounded-md border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
-                No tags yet.
-              </p>
-            ) : null}
           </div>
+
+          {tagsQuery.data?.length === 0 ? (
+            <p className="rounded-md border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500">
+              No tags yet.
+            </p>
+          ) : null}
         </section>
       </div>
     </AppLayout>
@@ -505,7 +507,7 @@ function ColorPicker({
   );
 }
 
-function TagEditorRow({
+function TagEditorCard({
   tag,
   disabled,
   onSave,
@@ -525,39 +527,46 @@ function TagEditorRow({
   }, [tag]);
 
   return (
-    <div className="grid gap-3 rounded-lg border border-slate-200 p-3 md:grid-cols-[1fr_220px_auto_auto]">
-      <div className="flex items-end">
-        <Input
-          label="Name"
-          value={name}
-          maxLength={50}
-          disabled={disabled}
-          onChange={(event) => setName(event.currentTarget.value)}
-        />
-      </div>
+    <div className="flex flex-col gap-5 rounded-lg border border-slate-200 p-4 shadow-sm transition-shadow hover:shadow-md">
+      <Input
+        label="Name"
+        value={name}
+        maxLength={50}
+        disabled={disabled}
+        onChange={(event) => setName(event.currentTarget.value)}
+      />
+
       <ColorPicker value={color} onChange={setColor} disabled={disabled} />
-      <div className="flex items-end">
-        <TagBadge name={name === "" ? tag.name : name} color={color} />
-      </div>
-      <div className="flex items-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          disabled={disabled}
-          onClick={() => onSave({ name: name.trim(), color })}
-        >
-          Save
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          onClick={onDelete}
-        >
-          Delete
-        </Button>
+
+      <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+        <div className="flex flex-col gap-1">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+            Preview
+          </p>
+          <TagBadge name={name === "" ? tag.name : name} color={color} />
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            onClick={() => onSave({ name: name.trim(), color })}
+          >
+            Save
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+            disabled={disabled}
+            onClick={onDelete}
+          >
+            Delete
+          </Button>
+        </div>
       </div>
     </div>
   );

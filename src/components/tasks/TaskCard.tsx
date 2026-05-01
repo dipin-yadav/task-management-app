@@ -23,7 +23,7 @@ type TaskCardTask = {
   assignee: {
     id: string;
     name: string | null;
-    email: string | null;
+    email?: string | null;
     image: string | null;
   } | null;
   tags: Array<{
@@ -84,11 +84,10 @@ export function TaskCard({
             <Avatar
               size="sm"
               name={task.assignee?.name}
-              email={task.assignee?.email}
               image={task.assignee?.image}
             />
             <span className="truncate text-xs text-slate-600">
-              {task.assignee?.name ?? task.assignee?.email ?? "Unassigned"}
+              {task.assignee?.name ?? "Unassigned"}
             </span>
           </div>
           <span className="shrink-0 text-xs text-slate-500">{formatDate(task.deadline)}</span>

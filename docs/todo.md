@@ -168,3 +168,14 @@
 - [x] Check error handling and edge cases
 - [x] Push to GitHub
 - [x] Share repository link
+
+## Phase 8: Security Hardening
+
+- [x] Address Account Enumeration in signup REST API
+- [x] Address Account Enumeration in `project.addMember` tRPC procedure
+- [x] Implement constant-time login to prevent timing attacks
+- [x] Implement role hierarchy to prevent horizontal privilege escalation
+- [x] Harden task deletion authorization (OWNER, ADMIN, or creator only)
+- [x] Implement email masking to prevent information disclosure
+- [x] Create dedicated security test suite
+- [x] Document security mitigations in `docs/security-hardening.md`
