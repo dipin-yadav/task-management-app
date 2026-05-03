@@ -52,9 +52,33 @@ describe("signup API", () => {
 
     await handler(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
-      error: "User with this email already exists",
+      error: "Invalid registration details",
+    });
+  });
+
+  it("returns 400 when the user already exists (pre-check)", async () => {
+    const req = {
+      method: "POST",
+      body: {
+        name: "Test User",
+        email: "existing@example.com",
+        password: "password1234",
+      },
+    } as NextApiRequest;
+    const res = createResponse();
+
+    dbMock.user.findUnique.mockResolvedValue({
+      id: "1",
+      email: "existing@example.com",
+    });
+
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Invalid registration details",
     });
   });
 });

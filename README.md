@@ -87,7 +87,7 @@ Here are all the `npm`, `npx`, and script commands needed to develop, test, and 
 ### npm Scripts
 
 | Command | Description |
-|---|---|
+| --- | --- |
 | `npm install` | Install all dependencies |
 | `npm run dev` | Start Next.js development server |
 | `npm run build` | Build production application |
@@ -104,7 +104,7 @@ Here are all the `npm`, `npx`, and script commands needed to develop, test, and 
 ### npx Commands
 
 | Command | Description |
-|---|---|
+| --- | --- |
 | `npx prisma generate` | Generate Prisma Client (runs automatically on postinstall) |
 | `npx sst deploy --stage production` | Deploy only the application to AWS using SST |
 | `npx sst remove --stage production` | Remove the deployed application from AWS |
@@ -113,13 +113,13 @@ Here are all the `npm`, `npx`, and script commands needed to develop, test, and 
 ### Bash Commands
 
 | Command | Description |
-|---|---|
+| --- | --- |
 | `./start-database.sh` | Start local PostgreSQL using Docker |
 
 ## Project Structure
 
 | Path | Purpose |
-|---|---|
+| --- | --- |
 | `src/pages/` | Next.js Pages Router pages and API routes |
 | `src/pages/auth/` | Sign-in and sign-up pages |
 | `src/pages/projects/` | Project list, create, board, settings, and task detail pages |
@@ -139,7 +139,7 @@ Here are all the `npm`, `npx`, and script commands needed to develop, test, and 
 All application APIs are type-safe tRPC procedures except sign-up, which is a REST endpoint at `POST /api/auth/signup`.
 
 | Router | Procedures | Description |
-|---|---:|---|
+| --- | --- | --- |
 | `auth` | 2 | Profile read/update |
 | `project` | 8 | Project CRUD and member/role management |
 | `task` | 7 | Task CRUD, assignment, filters, and status updates |
@@ -149,7 +149,7 @@ All application APIs are type-safe tRPC procedures except sign-up, which is a RE
 ## Main Routes
 
 | Route | Description |
-|---|---|
+| --- | --- |
 | `/` | Landing page; redirects authenticated users to `/dashboard` |
 | `/auth/signin` | Sign in |
 | `/auth/signup` | Create account |
@@ -164,7 +164,7 @@ All application APIs are type-safe tRPC procedures except sign-up, which is a RE
 ## Progress
 
 | Phase | Status |
-|---|---|
+| --- | --- |
 | Phase 1: Setup & Foundation | Complete |
 | Phase 2: Authentication | Complete |
 | Phase 3: Core Features API | Complete |
@@ -172,6 +172,7 @@ All application APIs are type-safe tRPC procedures except sign-up, which is a RE
 | Phase 5: Unit Tests | Complete |
 | Phase 6: Deployment | Complete |
 | Phase 7: Documentation & Polish | Complete |
+| Phase 8: Security Hardening | Complete |
 
 ## Verification
 
@@ -199,21 +200,23 @@ This project uses **GitHub Actions** for automated testing and deployment.
 ### GitHub Actions Workflow
 
 The workflow is defined in `.github/workflows/deploy.yml`. It triggers on pushes to the `main` branch and performs the following:
-1.  Checks out the code.
-2.  Sets up Node.js 24.
-3.  Configures AWS credentials using **OpenID Connect (OIDC)**.
-4.  Installs dependencies.
-5.  Runs linting (`npm run lint`).
-6.  Runs unit tests (`npm run test`).
-7.  Deploys database migrations (`npm run db:migrate`).
-8.  Syncs SST runtime secrets from GitHub Actions secrets.
-9.  Deploys to AWS via SST (`npx sst deploy --stage production`).
+
+1. Checks out the code.
+2. Sets up Node.js 24.
+3. Configures AWS credentials using **OpenID Connect (OIDC)**.
+4. Installs dependencies.
+5. Runs linting (`npm run lint`).
+6. Runs unit tests (`npm run test`).
+7. Deploys database migrations (`npm run db:migrate`).
+8. Syncs SST runtime secrets from GitHub Actions secrets.
+9. Deploys to AWS via SST (`npx sst deploy --stage production`).
 
 ### Security with OIDC
 
 We use AWS OIDC to avoid storing long-lived AWS Access Keys in GitHub. The workflow assumes a specific IAM Role in AWS that is cryptographically trusted by GitHub.
 
 **Required GitHub Secrets:**
+
 - `AWS_OIDC_ROLE_ARN`: The ARN of the IAM Role for deployment.
 - `PRODUCTION_DATABASE_URL`: Supabase pooled transaction URL for the dedicated `prisma` role.
 - `PRODUCTION_DIRECT_URL`: Supabase session/direct URL for Prisma migrations with the dedicated `prisma` role.
@@ -221,6 +224,7 @@ We use AWS OIDC to avoid storing long-lived AWS Access Keys in GitHub. The workf
 - `PRODUCTION_NEXTAUTH_URL`: Production public app URL used by NextAuth callbacks.
 
 **SST Runtime Secrets Synced by CI:**
+
 - `DATABASE_URL`: Set from `PRODUCTION_DATABASE_URL`.
 - `NEXTAUTH_SECRET`: Set from `PRODUCTION_NEXTAUTH_SECRET`.
 - `NEXTAUTH_URL`: Set from `PRODUCTION_NEXTAUTH_URL`.
@@ -238,6 +242,7 @@ This application is deployed to AWS using **SST v3 (Ion)**. While deployment is 
 
 2. **Set Secrets** (Production)
    SST secrets are stored in AWS SSM. Set them once from your local machine:
+
    ```bash
    npx sst secret set DATABASE_URL "your-pooled-supabase-prisma-role-url" --stage production
    npx sst secret set NEXTAUTH_SECRET "your-nextauth-secret" --stage production
@@ -250,6 +255,7 @@ This application is deployed to AWS using **SST v3 (Ion)**. While deployment is 
    Push to the `main` branch to trigger the GitHub Actions pipeline.
 
 4. **Manual Deploy** (Optional)
+
    ```bash
    npm run deploy:production
    ```
@@ -257,6 +263,19 @@ This application is deployed to AWS using **SST v3 (Ion)**. While deployment is 
    This runs `prisma migrate deploy` before `sst deploy --stage production`. For an app-only redeploy, use `npx sst deploy --stage production`.
 
 5. **Teardown** (if needed)
+
    ```bash
    npx sst remove --stage production
    ```
+
+## Security Hardening
+
+This project has undergone a dedicated security hardening phase (Phase 8) to protect against common web vulnerabilities:
+
+- **Account Enumeration Protection**: Generic error messages on signup and project membership endpoints prevent attackers from discovering registered emails.
+- **Timing Attack Mitigation**: Implemented constant-time login verification using dummy hash checks.
+- **Horizontal Privilege Escalation Prevention**: Enforced a strict role hierarchy for project member management.
+- **Harden Authorization**: Restricted destructive actions (like task deletion) to authorized roles and resource creators.
+- **Privacy & PII Protection**: Implemented email masking across the API and UI to protect user privacy.
+
+Detailed mitigation details can be found in [docs/security-hardening.md](docs/security-hardening.md).

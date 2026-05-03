@@ -70,13 +70,15 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         });
 
-        if (!user?.password) {
-          throw new Error("Invalid email or password");
-        }
+        // Mitigation: Always perform a password check to prevent timing attacks
+        // that could reveal if a user exists. Use a dummy hash if user or password is missing.
+        const dummyHash = "$2a$12$Kb56.z7.z7.z7.z7.z7.z7.z7.z7.z7.z7.z7.z7.z7.z7.z7.z7.z7.";
+        const isPasswordValid = await verifyPassword(
+          credentials.password,
+          user?.password ?? dummyHash
+        );
 
-        const isPasswordValid = await verifyPassword(credentials.password, user.password);
-
-        if (!isPasswordValid) {
+        if (!user?.password || !isPasswordValid) {
           throw new Error("Invalid email or password");
         }
 

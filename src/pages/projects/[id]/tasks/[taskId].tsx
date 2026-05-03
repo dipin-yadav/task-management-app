@@ -203,19 +203,16 @@ export default function TaskDetailPage() {
                     <Avatar
                       size="sm"
                       name={task.assignee?.name}
-                      email={task.assignee?.email}
                       image={task.assignee?.image}
                     />
                     <span className="text-sm font-medium text-slate-800">
-                      {task.assignee?.name ??
-                        task.assignee?.email ??
-                        "Unassigned"}
+                      {task.assignee?.name ?? "Unassigned"}
                     </span>
                   </div>
                 </div>
                 <DetailItem
                   label="Creator"
-                  value={task.creator.name ?? task.creator.email ?? "Unknown"}
+                  value={task.creator.name ?? "Unknown"}
                 />
                 <DetailItem
                   label="Deadline"

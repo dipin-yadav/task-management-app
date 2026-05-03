@@ -19,10 +19,10 @@ const membership = {
 const expectedTaskInclude = {
   tags: { include: { tag: true } },
   assignee: {
-    select: { id: true, name: true, email: true, image: true },
+    select: { id: true, name: true, image: true },
   },
   creator: {
-    select: { id: true, name: true, email: true, image: true },
+    select: { id: true, name: true, image: true },
   },
 };
 
@@ -120,6 +120,7 @@ describe("task router", () => {
     db.task.findUnique.mockResolvedValue({
       id: TEST_TASK_ID,
       projectId: TEST_PROJECT_ID,
+      creatorId: TEST_USER_ID,
     });
     db.projectMember.findUnique.mockResolvedValue(membership);
     db.task.update.mockResolvedValue(updatedTask);
@@ -153,6 +154,7 @@ describe("task router", () => {
     db.task.findUnique.mockResolvedValue({
       id: TEST_TASK_ID,
       projectId: TEST_PROJECT_ID,
+      creatorId: TEST_USER_ID,
     });
     db.projectMember.findUnique.mockResolvedValue(membership);
     db.task.update.mockResolvedValue(updatedTask);
@@ -177,6 +179,7 @@ describe("task router", () => {
     db.task.findUnique.mockResolvedValue({
       id: TEST_TASK_ID,
       projectId: TEST_PROJECT_ID,
+      creatorId: TEST_USER_ID,
     });
     db.projectMember.findUnique.mockResolvedValue(membership);
     db.tag.count.mockResolvedValue(0);
@@ -200,6 +203,7 @@ describe("task router", () => {
     db.task.findUnique.mockResolvedValue({
       id: TEST_TASK_ID,
       projectId: TEST_PROJECT_ID,
+      creatorId: TEST_USER_ID,
     });
     db.projectMember.findUnique.mockResolvedValue(membership);
     db.task.delete.mockResolvedValue({ id: TEST_TASK_ID });

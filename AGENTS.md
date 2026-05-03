@@ -11,7 +11,7 @@ Users can sign up, sign in, create projects, manage project members, create task
 ## 2. Core Stack
 
 | Layer | Technology | Notes |
-|---|---|---|
+| --- | --- | --- |
 | Framework | Next.js 14 | Pages Router only, not App Router |
 | Language | TypeScript | Strict mode, `noUncheckedIndexedAccess: true` |
 | Node.js | >= 20.x | 24.x (LTS) recommended |
@@ -130,7 +130,7 @@ Important: server-side props must be JSON-serializable. `requireAuth` normalizes
 Defined in `src/server/api/trpc.ts`:
 
 | Procedure | Auth Required | Description |
-|---|---|---|
+| --- | --- | --- |
 | `publicProcedure` | No | Public endpoint base |
 | `protectedProcedure` | Yes | Requires valid session |
 
@@ -234,7 +234,7 @@ Authenticated pages use a clean, light SaaS-style interface. No new UI dependenc
 The schema is defined in `prisma/schema.prisma`.
 
 | Model | Purpose |
-|---|---|
+| --- | --- |
 | `User` | User accounts with optional hashed password |
 | `Account` | NextAuth account table |
 | `Session` | NextAuth session table |
@@ -266,7 +266,7 @@ Recommended Node.js version: **24.x (LTS)**.
 Available scripts:
 
 | Command | Description |
-|---|---|
+| --- | --- |
 | `npm run dev` | Start dev server |
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
@@ -324,7 +324,7 @@ Available scripts:
 ## 11. Project Status
 
 | Phase | Description | Status |
-|---|---|---|
+| --- | --- | --- |
 | 1 | Project Setup & Foundation | Complete |
 | 2 | Authentication | Complete |
 | 3 | Core Features API | Complete |
@@ -332,6 +332,7 @@ Available scripts:
 | 5 | Testing | Complete |
 | 6 | Deployment with SST/AWS & CI/CD | Complete |
 | 7 | Documentation & Polish | Complete |
+| 8 | Security Hardening | Complete |
 
 ### Built
 
@@ -349,6 +350,7 @@ Available scripts:
 - SST v3 initialized and deployed to AWS
 - GitHub Actions CI/CD pipeline implemented with AWS OIDC
 - Final documentation, testing, and polish completed
+- Security hardening implemented (enumeration, privilege escalation, authorization, and privacy)
 
 ### Remaining
 
@@ -374,9 +376,35 @@ Available scripts:
 
 If you are an AI coding agent working in this repository, follow this workflow:
 
-1. **Verify Your Changes:** Before concluding your turn, run `npm run lint`, `npm run build`, and `npm run test` to ensure your code changes did not introduce regressions.
-2. **Database Schema Changes:** If you modify `prisma/schema.prisma`, immediately run `npx prisma format` and `npx prisma generate` to keep the client types up-to-date. Create migrations via `npx prisma migrate dev --name <description>`.
-3. **Styling:** Rely solely on Tailwind CSS utility classes. Do not introduce custom CSS in `globals.css` unless defining new theme tokens or global base resets.
-4. **Component Generation:** Use functional React components with strict TypeScript interfaces. Destructure props and leverage the `cn()` utility (`src/utils/cn.ts`) for merging Tailwind classes.
-5. **API Integration:** For new frontend data fetching or mutations, always use the strongly-typed `api` object from `~/utils/api`. Do not write raw `fetch` calls.
-6. **Tool Usage:** Prefer file edits using targeted replace tools rather than full file rewrites. Do not write untested logic for complex data transformations.
+1. **Execution Restriction:** You cannot execute `npm`, `node`, or `npx` directly due to sandbox limitations. **ALWAYS** ask the user to execute these commands and provide the output back to you.
+2. **Verify Your Changes:** Before concluding your turn, ask the user to run `npm run lint`, `npm run build`, and `npm run test` to ensure your code changes did not introduce regressions.
+3. **Database Schema Changes:** If you modify `prisma/schema.prisma`, ask the user to run `npx prisma format` and `npx prisma generate` to keep the client types up-to-date.
+4. **Styling:** Rely solely on Tailwind CSS utility classes. Do not introduce custom CSS in `globals.css` unless defining new theme tokens or global base resets.
+5. **Component Generation:** Use functional React components with strict TypeScript interfaces. Destructure props and leverage the `cn()` utility (`src/utils/cn.ts`) for merging Tailwind classes.
+6. **API Integration:** For new frontend data fetching or mutations, always use the strongly-typed `api` object from `~/utils/api`. Do not write raw `fetch` calls.
+7. **Tool Usage:** Prefer file edits using targeted replace tools rather than full file rewrites. Do not write untested logic for complex data transformations.
+
+## 14. Security Principles
+
+Follow these rules to maintain the security posture of the application:
+
+### Prevent Account Enumeration
+
+- Use generic error messages for authentication and membership actions (e.g., "Invalid registration details" instead of "Email already exists").
+- Ensure tRPC procedures do not leak whether a user exists through distinct error codes.
+
+### Prevent Timing Attacks
+
+- Always perform password verification even if the user is not found. Use a "dummy hash" to ensure the `bcrypt.compare` step always runs.
+
+### Authorization & Role Hierarchy
+
+- Enforce a strict role hierarchy: `OWNER` > `ADMIN` > `MEMBER`.
+- Only `OWNER`s can remove `ADMIN`s. `ADMIN`s can only remove `MEMBER`s.
+- Destructive actions (like deleting a task) must be restricted to the `OWNER`, `ADMIN`, or the resource `creator`.
+
+### Privacy & PII
+
+- Mask sensitive information like email addresses.
+- Only users with `OWNER` or `ADMIN` roles should see the email addresses of other project members.
+- Remove `email` fields from default API selections unless strictly required for the authenticated user's own profile.

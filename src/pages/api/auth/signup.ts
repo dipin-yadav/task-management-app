@@ -24,8 +24,8 @@ export default async function handler(
 
     if (existingUser) {
       return res
-        .status(409)
-        .json({ error: "User with this email already exists" });
+        .status(400)
+        .json({ error: "Invalid registration details" });
     }
 
     // Hash password
@@ -60,8 +60,8 @@ export default async function handler(
       error.code === "P2002"
     ) {
       return res
-        .status(409)
-        .json({ error: "User with this email already exists" });
+        .status(400)
+        .json({ error: "Invalid registration details" });
     }
 
     console.error("Signup error:", error);
