@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { TaskPriority, TaskStatus } from "@prisma/client";
+import { TaskPriority, TaskStatus, ActivityType } from "@prisma/client";
+import { logActivity } from "./history";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
 import { verifyProjectMembership } from "./project";
@@ -57,7 +58,7 @@ export const taskRouter = createTRPCRouter({
         }
       }
 
-      return ctx.db.task.create({
+      const task = await ctx.db.task.create({
         data: {
           title: input.title,
           description: input.description,
@@ -74,6 +75,16 @@ export const taskRouter = createTRPCRouter({
         },
         include: taskInclude,
       });
+
+      await logActivity(ctx.db, {
+        type: ActivityType.TASK_CREATED,
+        message: `Created task "${task.title}"`,
+        projectId: task.projectId,
+        taskId: task.id,
+        userId: ctx.session.user.id,
+      });
+
+      return task;
     }),
 
   list: protectedProcedure
@@ -198,7 +209,7 @@ export const taskRouter = createTRPCRouter({
           }
         }
 
-        return tx.task.update({
+        const updatedTask = await tx.task.update({
           where: { id: input.id },
           data: {
             ...(input.title !== undefined && { title: input.title }),
@@ -214,6 +225,39 @@ export const taskRouter = createTRPCRouter({
           },
           include: taskInclude,
         });
+
+        const activityType =
+          input.status !== undefined
+            ? ActivityType.TASK_STATUS_CHANGED
+            : input.priority !== undefined
+              ? ActivityType.TASK_PRIORITY_CHANGED
+              : input.assigneeId !== undefined
+                ? ActivityType.TASK_ASSIGNED
+                : ActivityType.TASK_UPDATED;
+
+        let message = `Updated task "${updatedTask.title}"`;
+        if (input.status !== undefined) {
+          message = `Changed status of "${updatedTask.title}" to ${input.status}`;
+        } else if (input.priority !== undefined) {
+          message = `Changed priority of "${updatedTask.title}" to ${input.priority}`;
+        } else if (input.assigneeId !== undefined) {
+          message = input.assigneeId
+            ? `Assigned task "${updatedTask.title}" to ${updatedTask.assignee?.name ?? "a user"}`
+            : `Unassigned task "${updatedTask.title}"`;
+        }
+
+        await logActivity(tx, {
+          type: activityType,
+          message,
+          projectId: updatedTask.projectId,
+          taskId: updatedTask.id,
+          userId: ctx.session.user.id,
+          metadata: {
+            changes: input,
+          },
+        });
+
+        return updatedTask;
       });
     }),
 
@@ -245,6 +289,17 @@ export const taskRouter = createTRPCRouter({
       }
 
       await ctx.db.task.delete({ where: { id: input.id } });
+
+      await logActivity(ctx.db, {
+        type: ActivityType.TASK_DELETED,
+        message: `Deleted task "${task.title}"`,
+        projectId: task.projectId,
+        userId: ctx.session.user.id,
+        metadata: {
+          taskId: task.id,
+          taskTitle: task.title,
+        },
+      });
     }),
 
   assign: protectedProcedure
@@ -270,11 +325,26 @@ export const taskRouter = createTRPCRouter({
         await verifyProjectMembership(ctx.db, task.projectId, input.assigneeId);
       }
 
-      return ctx.db.task.update({
+      const updatedTask = await ctx.db.task.update({
         where: { id: input.id },
         data: { assigneeId: input.assigneeId },
         include: taskInclude,
       });
+
+      await logActivity(ctx.db, {
+        type: ActivityType.TASK_ASSIGNED,
+        message: input.assigneeId
+          ? `Assigned task "${updatedTask.title}" to ${updatedTask.assignee?.name ?? "a user"}`
+          : `Unassigned task "${updatedTask.title}"`,
+        projectId: updatedTask.projectId,
+        taskId: updatedTask.id,
+        userId: ctx.session.user.id,
+        metadata: {
+          assigneeId: input.assigneeId,
+        },
+      });
+
+      return updatedTask;
     }),
 
   updateStatus: protectedProcedure
@@ -296,10 +366,23 @@ export const taskRouter = createTRPCRouter({
         ctx.session.user.id,
       );
 
-      return ctx.db.task.update({
+      const updatedTask = await ctx.db.task.update({
         where: { id: input.id },
         data: { status: input.status },
         include: taskInclude,
       });
+
+      await logActivity(ctx.db, {
+        type: ActivityType.TASK_STATUS_CHANGED,
+        message: `Changed status of "${updatedTask.title}" to ${input.status}`,
+        projectId: updatedTask.projectId,
+        taskId: updatedTask.id,
+        userId: ctx.session.user.id,
+        metadata: {
+          status: input.status,
+        },
+      });
+
+      return updatedTask;
     }),
 });

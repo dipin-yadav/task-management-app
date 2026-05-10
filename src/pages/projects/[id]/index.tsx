@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 
 import { AppLayout } from "~/components/layout/AppLayout";
 import { TaskBoard } from "~/components/tasks/TaskBoard";
@@ -13,6 +14,7 @@ import { Badge, statusTone } from "~/components/ui/Badge";
 import { Button } from "~/components/ui/Button";
 import { EmptyState } from "~/components/ui/EmptyState";
 import { Modal } from "~/components/ui/Modal";
+import { HistoryTimeline } from "~/components/history/HistoryTimeline";
 import { requireAuth } from "~/server/requireAuth";
 import { api } from "~/utils/api";
 import {
@@ -31,6 +33,7 @@ const initialFilters: TaskFilterState = {
 
 export default function ProjectDetailPage() {
   const router = useRouter();
+  const session = useSession();
   const projectId = typeof router.query.id === "string" ? router.query.id : "";
   const utils = api.useUtils();
 
@@ -38,11 +41,25 @@ export default function ProjectDetailPage() {
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [formError, setFormError] = useState("");
   const [boardMessage, setBoardMessage] = useState("");
+  const [activeTab, setActiveTab] = useState<"board" | "history">("board");
 
   const projectQuery = api.project.getById.useQuery(
     { id: projectId },
     { enabled: Boolean(projectId) },
   );
+
+  const currentUserMembership = projectQuery.data?.members.find(
+    (m) => m.userId === session.data?.user.id,
+  );
+  const canSeeHistory =
+    currentUserMembership?.role === "OWNER" ||
+    currentUserMembership?.role === "ADMIN";
+
+  const historyQuery = api.history.listProjectHistory.useQuery(
+    { projectId },
+    { enabled: Boolean(projectId) && canSeeHistory && activeTab === "history" },
+  );
+
   const tagsQuery = api.tag.list.useQuery(
     { projectId },
     { enabled: Boolean(projectId) },
@@ -56,7 +73,7 @@ export default function ProjectDetailPage() {
       ...(filters.tagId ? { tagIds: [filters.tagId] } : {}),
       ...(filters.search ? { search: filters.search } : {}),
     },
-    { enabled: Boolean(projectId) },
+    { enabled: Boolean(projectId) && activeTab === "board" },
   );
 
   const updateStatus = api.task.updateStatus.useMutation({
@@ -64,6 +81,7 @@ export default function ProjectDetailPage() {
       void utils.task.list.invalidate();
       void utils.project.getById.invalidate({ id: projectId });
       void utils.dashboard.getStats.invalidate();
+      void utils.history.listProjectHistory.invalidate({ projectId });
     },
   });
   const createTask = api.task.create.useMutation({
@@ -73,6 +91,7 @@ export default function ProjectDetailPage() {
       void utils.dashboard.getStats.invalidate();
       void utils.dashboard.getRecentActivity.invalidate();
       void utils.dashboard.getMyTasks.invalidate();
+      void utils.history.listProjectHistory.invalidate({ projectId });
     },
   });
 
@@ -159,76 +178,124 @@ export default function ProjectDetailPage() {
           </div>
         </div>
 
-        {project ? (
-          <div className="grid gap-3 sm:grid-cols-4">
-            <StatusCount
-              label="To do"
-              value={project.taskCounts.TODO}
-              status="TODO"
-            />
-            <StatusCount
-              label="In progress"
-              value={project.taskCounts.IN_PROGRESS}
-              status="IN_PROGRESS"
-            />
-            <StatusCount
-              label="In review"
-              value={project.taskCounts.IN_REVIEW}
-              status="IN_REVIEW"
-            />
-            <StatusCount
-              label="Done"
-              value={project.taskCounts.DONE}
-              status="DONE"
-            />
+        <div className="border-b border-slate-200">
+          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab("board")}
+              className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${
+                activeTab === "board"
+                  ? "border-indigo-500 text-indigo-600"
+                  : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
+              }`}
+            >
+              Task Board
+            </button>
+            {canSeeHistory && (
+              <button
+                onClick={() => setActiveTab("history")}
+                className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition-colors ${
+                  activeTab === "history"
+                    ? "border-indigo-500 text-indigo-600"
+                    : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                }`}
+              >
+                Project History
+              </button>
+            )}
+          </nav>
+        </div>
+
+        {activeTab === "board" && (
+          <>
+            {project ? (
+              <div className="grid gap-3 sm:grid-cols-4">
+                <StatusCount
+                  label="To do"
+                  value={project.taskCounts.TODO}
+                  status="TODO"
+                />
+                <StatusCount
+                  label="In progress"
+                  value={project.taskCounts.IN_PROGRESS}
+                  status="IN_PROGRESS"
+                />
+                <StatusCount
+                  label="In review"
+                  value={project.taskCounts.IN_REVIEW}
+                  status="IN_REVIEW"
+                />
+                <StatusCount
+                  label="Done"
+                  value={project.taskCounts.DONE}
+                  status="DONE"
+                />
+              </div>
+            ) : null}
+
+            {project ? (
+              <TaskFilters
+                filters={filters}
+                members={project.members}
+                tags={tags}
+                onChange={setFilters}
+              />
+            ) : null}
+
+            {tasksQuery.isLoading ? (
+              <p className="text-sm text-slate-500">Loading tasks...</p>
+            ) : null}
+
+            {boardMessage ? (
+              <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                {boardMessage}
+              </div>
+            ) : null}
+
+            {!tasksQuery.isLoading && tasksQuery.isError ? (
+              <EmptyState
+                title="Failed to load tasks"
+                description={tasksQuery.error.message}
+              />
+            ) : null}
+
+            {!tasksQuery.isLoading &&
+            !tasksQuery.isError &&
+            tasksQuery.data &&
+            tasksQuery.data.length > 0 ? (
+              <TaskBoard
+                tasks={tasksQuery.data}
+                projectId={projectId}
+                onStatusChange={handleStatusChange}
+              />
+            ) : null}
+
+            {!tasksQuery.isLoading &&
+            !tasksQuery.isError &&
+            tasksQuery.data?.length === 0 ? (
+              <EmptyState
+                title="No tasks match this view"
+                description="Create a task or adjust the filters to see more work on the board."
+              />
+            ) : null}
+          </>
+        )}
+
+        {activeTab === "history" && (
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-6 text-lg font-medium text-slate-900">
+              Project Activity Timeline
+            </h3>
+            {historyQuery.isLoading ? (
+              <p className="text-sm text-slate-500">Loading history...</p>
+            ) : historyQuery.isError ? (
+              <p className="text-sm text-rose-600">
+                {historyQuery.error.message}
+              </p>
+            ) : (
+              <HistoryTimeline activities={historyQuery.data ?? []} />
+            )}
           </div>
-        ) : null}
-
-        {project ? (
-          <TaskFilters
-            filters={filters}
-            members={project.members}
-            tags={tags}
-            onChange={setFilters}
-          />
-        ) : null}
-
-        {tasksQuery.isLoading ? (
-          <p className="text-sm text-slate-500">Loading tasks...</p>
-        ) : null}
-
-        {boardMessage ? (
-          <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-            {boardMessage}
-          </div>
-        ) : null}
-
-        {!tasksQuery.isLoading && tasksQuery.isError ? (
-          <EmptyState
-            title="Failed to load tasks"
-            description={tasksQuery.error.message}
-          />
-        ) : null}
-
-        {!tasksQuery.isLoading &&
-        !tasksQuery.isError &&
-        tasksQuery.data &&
-        tasksQuery.data.length > 0 ? (
-          <TaskBoard
-            tasks={tasksQuery.data}
-            projectId={projectId}
-            onStatusChange={handleStatusChange}
-          />
-        ) : null}
-
-        {!tasksQuery.isLoading &&
-        !tasksQuery.isError &&
-        tasksQuery.data?.length === 0 ? (
-          <EmptyState
-            title="No tasks match this view"
-            description="Create a task or adjust the filters to see more work on the board."
-          />
-        ) : null}
+        )}
       </div>
 
       <Modal

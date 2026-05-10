@@ -8,6 +8,7 @@ import { TagBadge } from "~/components/tags/TagBadge";
 import { Avatar } from "~/components/ui/Avatar";
 import { Badge, priorityTone, statusTone } from "~/components/ui/Badge";
 import { Button } from "~/components/ui/Button";
+import { HistoryTimeline } from "~/components/history/HistoryTimeline";
 import { requireAuth } from "~/server/requireAuth";
 import { api } from "~/utils/api";
 import {
@@ -38,6 +39,10 @@ export default function TaskDetailPage() {
     { projectId },
     { enabled: Boolean(projectId) },
   );
+  const historyQuery = api.history.listTaskHistory.useQuery(
+    { taskId },
+    { enabled: Boolean(taskId) },
+  );
 
   const updateTask = api.task.update.useMutation({
     onSuccess: () => {
@@ -47,6 +52,7 @@ export default function TaskDetailPage() {
       void utils.dashboard.getStats.invalidate();
       void utils.dashboard.getRecentActivity.invalidate();
       void utils.dashboard.getMyTasks.invalidate();
+      void utils.history.listTaskHistory.invalidate({ taskId });
     },
   });
   const deleteTask = api.task.delete.useMutation({
@@ -172,63 +178,87 @@ export default function TaskDetailPage() {
         ) : null}
 
         {!editing && task ? (
-          <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-wrap gap-2">
-              <Badge tone={statusTone[task.status]}>
-                {statusLabels[task.status]}
-              </Badge>
-              <Badge tone={priorityTone[task.priority]}>
-                {priorityLabels[task.priority]}
-              </Badge>
-              {task.tags.map(({ tag }) => (
-                <TagBadge key={tag.id} name={tag.name} color={tag.color} />
-              ))}
-            </div>
-
-            <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                  Description
-                </h3>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
-                  {task.description ?? "No description"}
-                </p>
+          <>
+            <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-wrap gap-2">
+                <Badge tone={statusTone[task.status]}>
+                  {statusLabels[task.status]}
+                </Badge>
+                <Badge tone={priorityTone[task.priority]}>
+                  {priorityLabels[task.priority]}
+                </Badge>
+                {task.tags.map(({ tag }) => (
+                  <TagBadge key={tag.id} name={tag.name} color={tag.color} />
+                ))}
               </div>
-              <aside className="space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+
+              <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Assignee
-                  </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Avatar
-                      size="sm"
-                      name={task.assignee?.name}
-                      image={task.assignee?.image}
-                    />
-                    <span className="text-sm font-medium text-slate-800">
-                      {task.assignee?.name ?? "Unassigned"}
-                    </span>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+                    Description
+                  </h3>
+                  <div className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
+                    {task.description ?? "No description"}
                   </div>
                 </div>
-                <DetailItem
-                  label="Creator"
-                  value={task.creator.name ?? "Unknown"}
-                />
-                <DetailItem
-                  label="Deadline"
-                  value={formatDateTime(task.deadline)}
-                />
-                <DetailItem
-                  label="Created"
-                  value={formatDateTime(task.createdAt)}
-                />
-                <DetailItem
-                  label="Updated"
-                  value={formatDateTime(task.updatedAt)}
-                />
-              </aside>
-            </div>
-          </section>
+                <aside className="space-y-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Assignee
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Avatar
+                        size="sm"
+                        name={task.assignee?.name}
+                        image={task.assignee?.image}
+                      />
+                      <span className="text-sm font-medium text-slate-800">
+                        {task.assignee?.name ?? "Unassigned"}
+                      </span>
+                    </div>
+                  </div>
+                  <DetailItem
+                    label="Creator"
+                    value={task.creator.name ?? "Unknown"}
+                  />
+                  <DetailItem
+                    label="Deadline"
+                    value={formatDateTime(task.deadline)}
+                  />
+                  <DetailItem
+                    label="Created"
+                    value={formatDateTime(task.createdAt)}
+                  />
+                  <DetailItem
+                    label="Updated"
+                    value={formatDateTime(task.updatedAt)}
+                  />
+                </aside>
+              </div>
+            </section>
+
+            <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+              <h3 className="mb-6 text-lg font-medium text-slate-900">
+                Task History
+              </h3>
+              {historyQuery.isLoading ? (
+                <p className="text-sm text-slate-500">Loading history...</p>
+              ) : historyQuery.isError ? (
+                historyQuery.error.data?.code === "FORBIDDEN" ? (
+                  <p className="text-sm text-slate-500 italic">
+                    History is only visible to project admins or the task
+                    assignee.
+                  </p>
+                ) : (
+                  <p className="text-sm text-rose-600">
+                    {historyQuery.error.message}
+                  </p>
+                )
+              ) : (
+                <HistoryTimeline activities={historyQuery.data ?? []} />
+              )}
+            </section>
+          </>
         ) : null}
 
         {taskQuery.isLoading ? (
