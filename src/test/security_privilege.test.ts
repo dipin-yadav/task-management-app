@@ -28,16 +28,17 @@ describe("Security: Horizontal Privilege Escalation Protection", () => {
         projectId: TEST_PROJECT_ID,
         userId: targetUserId,
         role: "MEMBER",
+        user: { name: "Target User", email: "target@example.com" },
       });
 
-      db.projectMember.delete.mockResolvedValue({ projectId: TEST_PROJECT_ID, userId: targetUserId });
+      db.projectMember.update.mockResolvedValue({ projectId: TEST_PROJECT_ID, userId: targetUserId });
 
       await caller.project.removeMember({
         projectId: TEST_PROJECT_ID,
         userId: targetUserId,
       });
 
-      expect(db.projectMember.delete).toHaveBeenCalled();
+      expect(db.projectMember.update).toHaveBeenCalled();
     });
 
     it("prevents ADMIN from removing another ADMIN", async () => {
@@ -70,7 +71,7 @@ describe("Security: Horizontal Privilege Escalation Protection", () => {
         message: "Only project owner can remove other members with ADMIN role",
       });
 
-      expect(db.projectMember.delete).not.toHaveBeenCalled();
+      expect(db.projectMember.update).not.toHaveBeenCalled();
     });
 
     it("allows OWNER to remove an ADMIN", async () => {
@@ -91,16 +92,17 @@ describe("Security: Horizontal Privilege Escalation Protection", () => {
         projectId: TEST_PROJECT_ID,
         userId: adminToRemoveId,
         role: "ADMIN",
+        user: { name: "Admin User", email: "admin@example.com" },
       });
 
-      db.projectMember.delete.mockResolvedValue({ projectId: TEST_PROJECT_ID, userId: adminToRemoveId });
+      db.projectMember.update.mockResolvedValue({ projectId: TEST_PROJECT_ID, userId: adminToRemoveId });
 
       await caller.project.removeMember({
         projectId: TEST_PROJECT_ID,
         userId: adminToRemoveId,
       });
 
-      expect(db.projectMember.delete).toHaveBeenCalled();
+      expect(db.projectMember.update).toHaveBeenCalled();
     });
 
     it("allows ADMIN to remove themselves (leave project)", async () => {
@@ -119,16 +121,17 @@ describe("Security: Horizontal Privilege Escalation Protection", () => {
           projectId: TEST_PROJECT_ID,
           userId: TEST_USER_ID,
           role: "ADMIN",
+          user: { name: "Test User", email: "test@example.com" },
         });
   
-        db.projectMember.delete.mockResolvedValue({ projectId: TEST_PROJECT_ID, userId: TEST_USER_ID });
+        db.projectMember.update.mockResolvedValue({ projectId: TEST_PROJECT_ID, userId: TEST_USER_ID });
   
         await caller.project.removeMember({
           projectId: TEST_PROJECT_ID,
           userId: TEST_USER_ID,
         });
   
-        expect(db.projectMember.delete).toHaveBeenCalled();
+        expect(db.projectMember.update).toHaveBeenCalled();
       });
   });
 });

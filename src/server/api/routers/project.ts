@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { type ProjectRole } from "@prisma/client";
+import { type PrismaClient, type ProjectRole, ActivityType } from "@prisma/client";
 
 import { createTRPCRouter, protectedProcedure } from "~/server/api/trpc";
-import { type PrismaClient } from "@prisma/client";
+import { logActivity } from "./history";
 
 // ──────────────────────────────────
 // Shared authorization helper
@@ -21,8 +21,13 @@ export async function verifyProjectMembership(
   userId: string,
   requiredRoles?: ProjectRole[],
 ) {
-  const membership = await db.projectMember.findUnique({
-    where: { projectId_userId: { projectId, userId } },
+  const membership = await db.projectMember.findFirst({
+    where: { 
+      projectId, 
+      userId,
+      deletedAt: null,
+      project: { deletedAt: null }
+    },
   });
 
   if (!membership) {
@@ -84,8 +89,9 @@ export const projectRouter = createTRPCRouter({
   list: protectedProcedure.query(async ({ ctx }) => {
     const projects = await ctx.db.project.findMany({
       where: {
+        deletedAt: null,
         members: {
-          some: { userId: ctx.session.user.id },
+          some: { userId: ctx.session.user.id, deletedAt: null },
         },
       },
       include: {
@@ -163,7 +169,7 @@ export const projectRouter = createTRPCRouter({
       // Get task counts grouped by status
       const taskCounts = await ctx.db.task.groupBy({
         by: ["status"],
-        where: { projectId: input.id },
+        where: { projectId: input.id, deletedAt: null },
         _count: { status: true },
       });
 
@@ -175,7 +181,8 @@ export const projectRouter = createTRPCRouter({
       };
 
       for (const group of taskCounts) {
-        taskCountMap[group.status] = group._count.status;
+        const castedGroup = group as unknown as { _count: { status: number } };
+        taskCountMap[group.status] = castedGroup._count.status;
       }
 
       return {
@@ -250,7 +257,10 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
-      await ctx.db.project.delete({ where: { id: input.id } });
+      await ctx.db.project.update({ 
+        where: { id: input.id },
+        data: { deletedAt: new Date() }
+      });
     }),
 
   /**
@@ -302,23 +312,43 @@ export const projectRouter = createTRPCRouter({
         },
       });
 
-      if (existingMembership) {
+      if (existingMembership?.deletedAt === null) {
         throw new TRPCError({
           code: "CONFLICT",
           message: "Member could not be added to the project",
         });
       }
 
-      const member = await ctx.db.projectMember.create({
-        data: {
-          projectId: input.projectId,
-          userId: userToAdd.id,
-          role: input.role,
-        },
-        include: {
-          user: {
-            select: { id: true, name: true, email: true, image: true },
+      let member;
+      if (existingMembership) {
+        member = await ctx.db.projectMember.update({
+          where: { id: existingMembership.id },
+          data: { role: input.role, deletedAt: null },
+          include: {
+            user: { select: { id: true, name: true, email: true, image: true } },
           },
+        });
+      } else {
+        member = await ctx.db.projectMember.create({
+          data: {
+            projectId: input.projectId,
+            userId: userToAdd.id,
+            role: input.role,
+          },
+          include: {
+            user: { select: { id: true, name: true, email: true, image: true } },
+          },
+        });
+      }
+
+      await logActivity(ctx.db, {
+        type: ActivityType.MEMBER_ADDED,
+        message: `Added member ${userToAdd.name ?? userToAdd.email ?? "Unknown User"} as ${input.role}`,
+        projectId: input.projectId,
+        userId: ctx.session.user.id,
+        metadata: {
+          addedUserId: userToAdd.id,
+          role: input.role,
         },
       });
 
@@ -353,6 +383,7 @@ export const projectRouter = createTRPCRouter({
             userId: input.userId,
           },
         },
+        include: { user: true },
       });
 
       if (!memberToRemove) {
@@ -382,12 +413,25 @@ export const projectRouter = createTRPCRouter({
         });
       }
 
-      await ctx.db.projectMember.delete({
+      await ctx.db.projectMember.update({
         where: {
           projectId_userId: {
             projectId: input.projectId,
             userId: input.userId,
           },
+        },
+        data: { deletedAt: new Date() },
+      });
+
+      const removedUserName = memberToRemove.user.name ?? memberToRemove.user.email ?? "Unknown User";
+
+      await logActivity(ctx.db, {
+        type: ActivityType.MEMBER_REMOVED,
+        message: `Removed member ${removedUserName}`,
+        projectId: input.projectId,
+        userId: ctx.session.user.id,
+        metadata: {
+          removedUserId: input.userId,
         },
       });
     }),
@@ -450,6 +494,18 @@ export const projectRouter = createTRPCRouter({
           user: {
             select: { id: true, name: true, email: true, image: true },
           },
+        },
+      });
+
+      await logActivity(ctx.db, {
+        type: ActivityType.MEMBER_ROLE_CHANGED,
+        message: `Changed ${updated.user.name ?? updated.user.email ?? "Unknown User"}'s role to ${input.role}`,
+        projectId: input.projectId,
+        userId: ctx.session.user.id,
+        metadata: {
+          targetUserId: input.userId,
+          oldRole: targetMember.role,
+          newRole: input.role,
         },
       });
 

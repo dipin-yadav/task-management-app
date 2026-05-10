@@ -55,8 +55,9 @@ describe("project router", () => {
 
     expect(db.project.findMany).toHaveBeenCalledWith({
       where: {
+        deletedAt: null,
         members: {
-          some: { userId: TEST_USER_ID },
+          some: { userId: TEST_USER_ID, deletedAt: null },
         },
       },
       include: {
@@ -97,7 +98,10 @@ describe("project router", () => {
 
     expect(db.projectMember.findUnique).toHaveBeenCalledWith({
       where: {
-        projectId_userId: { projectId: TEST_PROJECT_ID, userId: TEST_USER_ID },
+        projectId: TEST_PROJECT_ID,
+        userId: TEST_USER_ID,
+        deletedAt: null,
+        project: { deletedAt: null },
       },
     });
     expect(db.project.update).toHaveBeenCalledWith({
@@ -152,12 +156,14 @@ describe("project router", () => {
       userId: TEST_USER_ID,
       role: "OWNER",
     });
-    db.project.delete.mockResolvedValue({ id: TEST_PROJECT_ID });
+    db.project.update.mockResolvedValue({ id: TEST_PROJECT_ID });
 
     await caller.project.delete({ id: TEST_PROJECT_ID });
 
-    expect(db.project.delete).toHaveBeenCalledWith({
+    expect(db.project.update).toHaveBeenCalledWith({
       where: { id: TEST_PROJECT_ID },
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      data: { deletedAt: expect.any(Date) }
     });
   });
 
@@ -177,7 +183,7 @@ describe("project router", () => {
     });
 
     expect(db.project.findUnique).not.toHaveBeenCalled();
-    expect(db.project.delete).not.toHaveBeenCalled();
+    expect(db.project.update).not.toHaveBeenCalled();
   });
 
   it("prevents admins from adding a new admin member", async () => {
