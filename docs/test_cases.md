@@ -155,7 +155,9 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 
 ---
 
-## Phase 5: Unit Tests (Code)
+## Phase 5: Testing (Code)
+
+### Unit Tests (Mocked)
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
@@ -169,6 +171,19 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 | 5.8 | Test: Task CRUD operations work correctly | ✅ Done | `src/server/api/routers/task.test.ts` covers create, list, update, delete |
 | 5.9 | Test: Project CRUD operations work correctly | ✅ Done | `src/server/api/routers/project.test.ts` covers create, list, update, delete |
 | 5.10 | Test: Non-member cannot access project tasks | ✅ Done | `src/server/api/routers/task.test.ts` verifies FORBIDDEN for non-member task list access |
+
+### Integration Tests (Real Database)
+
+| # | Test Case | Status | Notes |
+|---|-----------|--------|-------|
+| 5.11 | Integration test framework configured | ✅ Done | `vitest.integration.config.ts`, `.env.test`, separate test database |
+| 5.12 | Test utilities: `testDb`, `cleanupDatabase()`, `disconnectDatabase()` | ✅ Done | `src/test/integration/setup.ts` |
+| 5.13 | Test factories: `createUser()`, `createProject()`, `createTask()`, `createTag()` | ✅ Done | `src/test/integration/factories.ts` |
+| 5.14 | Test helpers: `createAuthenticatedCaller()`, `createUnauthenticatedCaller()` | ✅ Done | `src/test/integration/helpers.ts` |
+| 5.15 | Integration test: Project router CRUD with real database | ✅ Done | `src/server/api/routers/project.integration.test.ts` (14 tests) |
+| 5.16 | Integration test: Verify actual database state after operations | ✅ Done | Tests verify data in PostgreSQL, not just return values |
+| 5.17 | Integration test: Cascade delete behavior verified | ✅ Done | Project deletion cascades to tasks, tags, members |
+| 5.18 | Integration test: Authorization enforced at database level | ✅ Done | Non-members cannot access project data |
 
 ---
 
@@ -207,6 +222,7 @@ Based on requirements from `docs/plan.md`, `docs/api-reference.md`, `docs/archit
 | Phase 3: Core Features (API) | 24 | 24 | 0 |
 | Phase 4: UI/UX | 16 | 16 | 0 |
 | Phase 5: Unit Tests | 10 | 10 | 0 |
+| Phase 5b: Integration Tests | 8 | 8 | 0 |
 | Phase 6: Deployment | 4 | 4 | 0 |
 | Phase 7: Documentation | 8 | 8 | 0 |
-| **Total** | **101** | **101** | **0** |
+| **Total** | **109** | **109** | **0** |
