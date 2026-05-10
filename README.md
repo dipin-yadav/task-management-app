@@ -93,8 +93,11 @@ Here are all the `npm`, `npx`, and script commands needed to develop, test, and 
 | `npm run build` | Build production application |
 | `npm run start` | Start production server |
 | `npm run lint` | Run ESLint |
-| `npm run test` | Run Vitest unit tests once |
+| `npm run test` | Run Vitest unit tests (mocked) once |
 | `npm run test:watch` | Run Vitest unit tests in watch mode |
+| `npm run test:integration` | Run integration tests with real database |
+| `npm run test:integration:setup` | Set up test database and run migrations |
+| `npm run test:all` | Run all tests (unit + integration) |
 | `npm run db:generate` | Run Prisma migrate dev |
 | `npm run db:migrate` | Deploy Prisma migrations |
 | `npm run db:push` | Push Prisma schema without migration |
@@ -170,6 +173,7 @@ All application APIs are type-safe tRPC procedures except sign-up, which is a RE
 | Phase 3: Core Features API | Complete |
 | Phase 4: UI/UX Implementation | Complete |
 | Phase 5: Unit Tests | Complete |
+| Phase 5b: Integration Tests | Complete |
 | Phase 6: Deployment | Complete |
 | Phase 7: Documentation & Polish | Complete |
 | Phase 8: Security Hardening | Complete |
@@ -182,6 +186,7 @@ The final implementation has been verified with:
 npm run lint
 npm run build
 npm run test
+npm run test:integration
 ```
 
 ## Supabase Security

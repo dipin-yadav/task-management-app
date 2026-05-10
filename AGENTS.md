@@ -83,6 +83,13 @@ task-management-app/
 |   |           `-- task.ts
 |   |-- styles/
 |   |   `-- globals.css
+|   |-- test/
+|   |   |-- integration/
+|   |   |   |-- factories.ts    # Test data builders
+|   |   |   |-- helpers.ts      # Authenticated caller helpers
+|   |   |   `-- setup.ts        # Database lifecycle management
+|   |   |-- trpc.ts             # Mock utilities for unit tests
+|   |   `-- setup.ts            # Vitest setup
 |   `-- utils/
 |       |-- api.ts
 |       |-- cn.ts
@@ -271,8 +278,11 @@ Available scripts:
 | `npm run build` | Production build |
 | `npm run start` | Start production server |
 | `npm run lint` | ESLint |
-| `npm run test` | Run Vitest test suite once |
-| `npm run test:watch` | Run Vitest in watch mode |
+| `npm run test` | Run Vitest unit tests (mocked) |
+| `npm run test:watch` | Run Vitest unit tests in watch mode |
+| `npm run test:integration` | Run integration tests (real database) |
+| `npm run test:integration:setup` | Set up test database and run migrations |
+| `npm run test:all` | Run all tests (unit + integration) |
 | `npm run db:generate` | Prisma migrate dev |
 | `npm run db:migrate` | Prisma migrate deploy |
 | `npm run db:push` | Prisma db push |
@@ -289,7 +299,98 @@ Available scripts:
 - Use shared components before adding new local UI patterns.
 - Keep protected pages on `getServerSideProps = requireAuth`.
 
-## 10. How to Add New Features
+## 10. Testing
+
+The project has two levels of testing:
+
+### Unit Tests (Mocked)
+
+Unit tests use mocked Prisma clients to test business logic in isolation. They are fast and located in `src/**/*.test.ts`.
+
+```ts
+// Example: src/server/api/routers/project.test.ts
+const db = createMockDb();
+db.project.create.mockResolvedValue(project);
+```
+
+Run with: `npm run test`
+
+### Integration Tests (Real Database)
+
+Integration tests use a real PostgreSQL database to verify actual SQL queries, constraints, cascade behavior, and transactions. They are located in `src/**/*.integration.test.ts`.
+
+```ts
+// Example: src/server/api/routers/project.integration.test.ts
+const { caller, user } = await createAuthenticatedCaller();
+const result = await caller.project.create({ name: "My Project" });
+// Verify in actual database
+const dbProject = await testDb.project.findUnique({ where: { id: result.id } });
+expect(dbProject).not.toBeNull();
+```
+
+Run with: `npm run test:integration`
+
+**Setup:**
+
+1. Ensure PostgreSQL is running (`./start-database.sh`)
+2. Run `npm run test:integration:setup` to create the test database and apply migrations
+3. Run `npm run test:integration`
+
+**Test Utilities:**
+
+| Utility | Location | Purpose |
+| --------- | --------- -| --------- |
+| `testDb` | `src/test/integration/setup.ts` | Prisma client for the test database |
+| `createUser()` | `src/test/integration/factories.ts` | Create test users |
+| `createProject()` | `src/test/integration/factories.ts` | Create test projects with owner |
+| `createTask()` | `src/test/integration/factories.ts` | Create test tasks |
+| `createTag()` | `src/test/integration/factories.ts` | Create test tags |
+| `createAuthenticatedCaller()` | `src/test/integration/helpers.ts` | Create authenticated tRPC caller |
+| `cleanupDatabase()` | `src/test/integration/setup.ts` | Clean up all test data |
+
+**Example Integration Test:**
+
+```ts
+import { beforeEach, describe, expect, it, afterAll } from "vitest";
+import { createProject, createUser } from "~/test/integration/factories";
+import { createAuthenticatedCaller } from "~/test/integration/helpers";
+import { cleanupDatabase, disconnectDatabase, testDb } from "~/test/integration/setup";
+
+describe("project router (integration)", () => {
+  beforeEach(async () => {
+    await cleanupDatabase();
+  });
+
+  afterAll(async () => {
+    await disconnectDatabase();
+  });
+
+  it("creates a project in the database", async () => {
+    const { caller, user } = await createAuthenticatedCaller();
+
+    const result = await caller.project.create({
+      name: "Test Project",
+      description: "A test project",
+    });
+
+    // Verify return value
+    expect(result.name).toBe("Test Project");
+    expect(result.ownerId).toBe(user.id);
+
+    // Verify actual database state
+    const dbProject = await testDb.project.findUnique({
+      where: { id: result.id },
+      include: { members: true },
+    });
+
+    expect(dbProject).not.toBeNull();
+    expect(dbProject!.members).toHaveLength(1);
+    expect(dbProject!.members[0]!.role).toBe("OWNER");
+  });
+});
+```
+
+## 11. How to Add New Features
 
 ### Add a tRPC Router
 
