@@ -55,25 +55,26 @@ model VerificationToken {
 // ──────────────────────────────────
 
 model User {
-  id            String          @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String?         @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
-  password      String?         // Hashed password for Credentials provider
+  password      String? // Hashed password for Credentials provider
 
-  accounts      Account[]
-  sessions      Session[]
+  accounts Account[]
+  sessions Session[]
 
   // Application relations
-  ownedProjects   Project[]       @relation("ProjectOwner")
-  memberships     ProjectMember[]
-  createdTasks    Task[]          @relation("TaskCreator")
-  assignedTasks   Task[]          @relation("TaskAssignee")
-  activities      Activity[]
+  ownedProjects Project[]       @relation("ProjectOwner")
+  memberships   ProjectMember[]
+  createdTasks  Task[]          @relation("TaskCreator")
+  assignedTasks Task[]          @relation("TaskAssignee")
+  activities    Activity[]
 
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 enum ProjectRole {
@@ -83,33 +84,35 @@ enum ProjectRole {
 }
 
 model Project {
-  id          String          @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
   description String?
 
-  ownerId     String
-  owner       User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+  owner   User   @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Restrict)
 
-  members     ProjectMember[]
-  tasks       Task[]
-  tags        Tag[]
-  activities  Activity[]
+  members    ProjectMember[]
+  tasks      Task[]
+  tags       Tag[]
+  activities Activity[]
 
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model ProjectMember {
-  id        String      @id @default(cuid())
-  role      ProjectRole @default(MEMBER)
+  id   String      @id @default(cuid())
+  role ProjectRole @default(MEMBER)
 
   projectId String
-  project   Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
 
-  userId    String
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
-  joinedAt  DateTime    @default(now())
+  joinedAt  DateTime  @default(now())
+  deletedAt DateTime?
 
   @@unique([projectId, userId])
 }
@@ -136,20 +139,21 @@ model Task {
   priority    TaskPriority @default(MEDIUM)
   deadline    DateTime?
 
-  projectId   String
-  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
 
-  creatorId   String
-  creator     User         @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  creatorId String
+  creator   User   @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Restrict)
 
-  assigneeId  String?
-  assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  assigneeId String?
+  assignee   User?   @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
 
-  tags        TaskTag[]
-  activities  Activity[]
+  tags       TaskTag[]
+  activities Activity[]
 
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@index([projectId])
   @@index([assigneeId])
@@ -158,24 +162,26 @@ model Task {
 }
 
 model Tag {
-  id        String    @id @default(cuid())
-  name      String
-  color     String    @default("#6366f1") // Default indigo
+  id    String @id @default(cuid())
+  name  String
+  color String @default("#6366f1") // Default indigo
 
   projectId String
-  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
 
-  tasks     TaskTag[]
+  tasks TaskTag[]
+
+  deletedAt DateTime?
 
   @@unique([name, projectId])
 }
 
 model TaskTag {
   taskId String
-  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Restrict)
 
-  tagId  String
-  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId String
+  tag   Tag    @relation(fields: [tagId], references: [id], onDelete: Restrict)
 
   @@id([taskId, tagId])
 }
@@ -193,21 +199,21 @@ enum ActivityType {
 }
 
 model Activity {
-  id        String       @id @default(cuid())
-  type      ActivityType
-  message   String
-  metadata  Json?        // To store additional details like old/new values
+  id       String       @id @default(cuid())
+  type     ActivityType
+  message  String
+  metadata Json? // To store additional details like old/new values
 
   projectId String
-  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
 
-  taskId    String?
-  task      Task?        @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Restrict)
 
-  userId    String?      // The user who performed the action
-  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId String? // The user who performed the action
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  createdAt DateTime     @default(now())
+  createdAt DateTime @default(now())
 
   @@index([projectId])
   @@index([taskId])

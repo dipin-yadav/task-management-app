@@ -97,6 +97,7 @@ describe("task router", () => {
     expect(db.task.findMany).toHaveBeenCalledWith({
       where: {
         projectId: TEST_PROJECT_ID,
+        deletedAt: null,
         status: "TODO",
         OR: [
           { title: { contains: "tests", mode: "insensitive" } },
@@ -206,12 +207,14 @@ describe("task router", () => {
       creatorId: TEST_USER_ID,
     });
     db.projectMember.findUnique.mockResolvedValue(membership);
-    db.task.delete.mockResolvedValue({ id: TEST_TASK_ID });
+    db.task.update.mockResolvedValue({ id: TEST_TASK_ID });
 
     await caller.task.delete({ id: TEST_TASK_ID });
 
-    expect(db.task.delete).toHaveBeenCalledWith({
+    expect(db.task.update).toHaveBeenCalledWith({
       where: { id: TEST_TASK_ID },
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      data: { deletedAt: expect.any(Date) },
     });
   });
 

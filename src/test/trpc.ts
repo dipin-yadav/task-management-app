@@ -36,7 +36,11 @@ export interface MockDb {
     create: MockFn;
     delete: MockFn;
     findUnique: MockFn;
+    findFirst: MockFn;
     update: MockFn;
+  };
+  activity: {
+    create: MockFn;
   };
   user: {
     findUnique: MockFn;
@@ -80,7 +84,11 @@ export const createMockDb = (): MockDb => {
       create: vi.fn(),
       delete: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
+    },
+    activity: {
+      create: vi.fn(),
     },
     user: {
       findUnique: vi.fn(),
@@ -113,6 +121,12 @@ export const createMockDb = (): MockDb => {
 
   const runTransaction = (callback: (tx: MockDb) => unknown) => callback(db);
   db.$transaction.mockImplementation(runTransaction);
+
+  // Alias findFirst to findUnique so existing test mocks work seamlessly
+  db.projectMember.findFirst.mockImplementation((args) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+    return (db.projectMember.findUnique as (...args: unknown[]) => unknown)(args);
+  });
 
   return db;
 };

@@ -66,7 +66,7 @@ export const tagRouter = createTRPCRouter({
       );
 
       return ctx.db.tag.findMany({
-        where: { projectId: input.projectId },
+        where: { projectId: input.projectId, deletedAt: null },
         include: { _count: { select: { tasks: true } } },
         orderBy: { name: "asc" },
       });
@@ -89,7 +89,7 @@ export const tagRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const tag = await ctx.db.tag.findUnique({ where: { id: input.id } });
 
-      if (!tag) {
+      if (!tag || tag.deletedAt) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Tag not found" });
       }
 
@@ -128,13 +128,16 @@ export const tagRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const tag = await ctx.db.tag.findUnique({ where: { id: input.id } });
 
-      if (!tag) {
+      if (!tag || tag.deletedAt) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Tag not found" });
       }
 
       await verifyProjectMembership(ctx.db, tag.projectId, ctx.session.user.id);
 
-      await ctx.db.tag.delete({ where: { id: input.id } });
+      await ctx.db.tag.update({ 
+        where: { id: input.id },
+        data: { deletedAt: new Date() }
+      });
     }),
 
   /**
@@ -151,7 +154,7 @@ export const tagRouter = createTRPCRouter({
       const task = await ctx.db.task.findUnique({
         where: { id: input.taskId },
       });
-      if (!task) {
+      if (!task || task.deletedAt) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
@@ -163,7 +166,7 @@ export const tagRouter = createTRPCRouter({
 
       // Verify the tag belongs to the same project
       const tag = await ctx.db.tag.findUnique({ where: { id: input.tagId } });
-      if (!tag) {
+      if (!tag || tag.deletedAt) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Tag not found" });
       }
 
@@ -206,7 +209,7 @@ export const tagRouter = createTRPCRouter({
       const task = await ctx.db.task.findUnique({
         where: { id: input.taskId },
       });
-      if (!task) {
+      if (!task || task.deletedAt) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 

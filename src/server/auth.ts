@@ -78,7 +78,7 @@ export const authOptions: NextAuthOptions = {
           user?.password ?? dummyHash
         );
 
-        if (!user?.password || !isPasswordValid) {
+        if (!user?.password || !isPasswordValid || user.deletedAt !== null) {
           throw new Error("Invalid email or password");
         }
 

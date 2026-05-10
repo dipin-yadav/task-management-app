@@ -22,8 +22,10 @@ export const dashboardRouter = createTRPCRouter({
     const taskCounts = await ctx.db.task.groupBy({
       by: ["status"],
       where: {
+        deletedAt: null,
         project: {
-          members: { some: { userId: ctx.session.user.id } },
+          deletedAt: null,
+          members: { some: { userId: ctx.session.user.id, deletedAt: null } },
         },
       },
       _count: { status: true },
@@ -32,7 +34,8 @@ export const dashboardRouter = createTRPCRouter({
     const stats = { ...emptyStats };
 
     for (const group of taskCounts) {
-      const count = group._count.status;
+      const castedGroup = group as unknown as { _count: { status: number } };
+      const count = castedGroup._count.status;
       if (group.status === "TODO") stats.todo = count;
       if (group.status === "IN_PROGRESS") stats.inProgress = count;
       if (group.status === "IN_REVIEW") stats.inReview = count;
@@ -53,10 +56,12 @@ export const dashboardRouter = createTRPCRouter({
 
       return ctx.db.task.findMany({
         where: {
+          deletedAt: null,
           deadline: { gte: now, lte: dueBefore },
           status: { not: "DONE" },
           project: {
-            members: { some: { userId: ctx.session.user.id } },
+            deletedAt: null,
+            members: { some: { userId: ctx.session.user.id, deletedAt: null } },
           },
         },
         include: dashboardTaskInclude,
@@ -70,8 +75,10 @@ export const dashboardRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.task.findMany({
         where: {
+          deletedAt: null,
           project: {
-            members: { some: { userId: ctx.session.user.id } },
+            deletedAt: null,
+            members: { some: { userId: ctx.session.user.id, deletedAt: null } },
           },
         },
         include: dashboardTaskInclude,
@@ -91,10 +98,12 @@ export const dashboardRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       return ctx.db.task.findMany({
         where: {
+          deletedAt: null,
           assigneeId: ctx.session.user.id,
           ...(input?.status ? { status: input.status } : {}),
           project: {
-            members: { some: { userId: ctx.session.user.id } },
+            deletedAt: null,
+            members: { some: { userId: ctx.session.user.id, deletedAt: null } },
           },
         },
         include: dashboardTaskInclude,

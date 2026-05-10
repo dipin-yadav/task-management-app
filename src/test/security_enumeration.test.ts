@@ -56,6 +56,7 @@ describe("Security: Account Enumeration Protection", () => {
         projectId: TEST_PROJECT_ID,
         userId: "other-user-id",
         role: "MEMBER",
+        deletedAt: null,
       });
 
       await expect(

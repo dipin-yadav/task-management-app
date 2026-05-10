@@ -23,11 +23,15 @@ if (process.env.NODE_ENV !== "production") {
  */
 export async function cleanupDatabase(): Promise<void> {
   // Delete in reverse order of dependencies to avoid FK constraint errors
+  await testDb.activity.deleteMany();
   await testDb.taskTag.deleteMany();
   await testDb.task.deleteMany();
   await testDb.tag.deleteMany();
   await testDb.projectMember.deleteMany();
   await testDb.project.deleteMany();
+  await testDb.session.deleteMany();
+  await testDb.account.deleteMany();
+  await testDb.verificationToken.deleteMany();
   // Clean up users to prevent email conflicts between tests
   await testDb.user.deleteMany();
 }

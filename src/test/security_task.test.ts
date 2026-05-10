@@ -27,11 +27,15 @@ describe("Security: Task Deletion Protection", () => {
       role: "MEMBER",
     });
 
-    db.task.delete.mockResolvedValue({ id: TEST_TASK_ID });
+    db.task.update.mockResolvedValue({ id: TEST_TASK_ID });
 
     await caller.task.delete({ id: TEST_TASK_ID });
 
-    expect(db.task.delete).toHaveBeenCalledWith({ where: { id: TEST_TASK_ID } });
+    expect(db.task.update).toHaveBeenCalledWith({
+      where: { id: TEST_TASK_ID },
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      data: { deletedAt: expect.any(Date) },
+    });
   });
 
   it("prevents a MEMBER from deleting someone else's task", async () => {
@@ -59,7 +63,7 @@ describe("Security: Task Deletion Protection", () => {
       message: "You do not have permission to delete this task",
     });
 
-    expect(db.task.delete).not.toHaveBeenCalled();
+    expect(db.task.update).not.toHaveBeenCalled();
   });
 
   it("allows an ADMIN to delete someone else's task", async () => {
@@ -80,11 +84,11 @@ describe("Security: Task Deletion Protection", () => {
       role: "ADMIN",
     });
 
-    db.task.delete.mockResolvedValue({ id: TEST_TASK_ID });
+    db.task.update.mockResolvedValue({ id: TEST_TASK_ID });
 
     await caller.task.delete({ id: TEST_TASK_ID });
 
-    expect(db.task.delete).toHaveBeenCalled();
+    expect(db.task.update).toHaveBeenCalled();
   });
 
   it("allows the OWNER to delete someone else's task", async () => {
@@ -105,10 +109,10 @@ describe("Security: Task Deletion Protection", () => {
       role: "OWNER",
     });
 
-    db.task.delete.mockResolvedValue({ id: TEST_TASK_ID });
+    db.task.update.mockResolvedValue({ id: TEST_TASK_ID });
 
     await caller.task.delete({ id: TEST_TASK_ID });
 
-    expect(db.task.delete).toHaveBeenCalled();
+    expect(db.task.update).toHaveBeenCalled();
   });
 });

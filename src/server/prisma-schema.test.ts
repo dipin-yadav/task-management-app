@@ -9,11 +9,11 @@ describe("Prisma schema relation policies", () => {
   );
 
   it("keeps task user delete behavior explicit", () => {
-    expect(schema).toContain(
-      'creator     User         @relation("TaskCreator", fields: [creatorId], references: [id], onDelete: Restrict)',
+    expect(schema).toMatch(
+      /creator\s+User\s+@relation\("TaskCreator", fields: \[creatorId\], references: \[id\], onDelete: Restrict\)/,
     );
-    expect(schema).toContain(
-      'assignee    User?        @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)',
+    expect(schema).toMatch(
+      /assignee\s+User\?\s+@relation\("TaskAssignee", fields: \[assigneeId\], references: \[id\], onDelete: SetNull\)/,
     );
   });
 });

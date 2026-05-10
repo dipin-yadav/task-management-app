@@ -209,7 +209,7 @@ describe("project router (integration)", () => {
   });
 
   describe("project.delete", () => {
-    it("deletes project and cascades to related data", async () => {
+    it("soft deletes project and retains related data", async () => {
       // Create a full project scenario
       const scenario = await createProjectScenario({
         memberCount: 2,
@@ -234,20 +234,21 @@ describe("project router (integration)", () => {
       // Delete the project
       await caller.project.delete({ id: projectId });
 
-      // Verify project is gone
+      // Verify project is soft deleted
       const deletedProject = await testDb.project.findUnique({
         where: { id: projectId },
       });
-      expect(deletedProject).toBeNull();
+      expect(deletedProject).not.toBeNull();
+      expect(deletedProject!.deletedAt).not.toBeNull();
 
-      // Verify cascade deleted all related data
+      // Verify cascade deleted all related data (they are retained but inaccessible)
       const tasksAfter = await testDb.task.count({ where: { projectId } });
       const tagsAfter = await testDb.tag.count({ where: { projectId } });
       const membersAfter = await testDb.projectMember.count({ where: { projectId } });
 
-      expect(tasksAfter).toBe(0);
-      expect(tagsAfter).toBe(0);
-      expect(membersAfter).toBe(0);
+      expect(tasksAfter).toBe(3);
+      expect(tagsAfter).toBe(2);
+      expect(membersAfter).toBe(3);
     });
 
     it("prevents ADMIN from deleting project (owner only)", async () => {

@@ -108,6 +108,7 @@ export const taskRouter = createTRPCRouter({
       return ctx.db.task.findMany({
         where: {
           projectId: input.projectId,
+          deletedAt: null,
           ...(input.status && { status: input.status }),
           ...(input.priority && { priority: input.priority }),
           ...(input.assigneeId && { assigneeId: input.assigneeId }),
@@ -145,7 +146,7 @@ export const taskRouter = createTRPCRouter({
         },
       });
 
-      if (!task) {
+      if (!task || task.deletedAt) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
@@ -265,7 +266,7 @@ export const taskRouter = createTRPCRouter({
     .input(z.object({ id: z.string().cuid() }))
     .mutation(async ({ ctx, input }) => {
       const task = await ctx.db.task.findUnique({ where: { id: input.id } });
-      if (!task) {
+      if (!task || task.deletedAt) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
@@ -288,7 +289,10 @@ export const taskRouter = createTRPCRouter({
         });
       }
 
-      await ctx.db.task.delete({ where: { id: input.id } });
+      await ctx.db.task.update({ 
+        where: { id: input.id },
+        data: { deletedAt: new Date() }
+      });
 
       await logActivity(ctx.db, {
         type: ActivityType.TASK_DELETED,
@@ -311,7 +315,7 @@ export const taskRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const task = await ctx.db.task.findUnique({ where: { id: input.id } });
-      if (!task) {
+      if (!task || task.deletedAt) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
@@ -356,7 +360,7 @@ export const taskRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const task = await ctx.db.task.findUnique({ where: { id: input.id } });
-      if (!task) {
+      if (!task || task.deletedAt) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
       }
 
